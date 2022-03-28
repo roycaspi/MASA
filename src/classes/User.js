@@ -45,7 +45,12 @@ async function isCollision(toAdd) {
 export default class User {
     constructor(personalDetails, data) {
         this.personalDetails = personalDetails;
-        this.data = data; //todo: connect to DB and merge/add data
+        if(data){
+          this.data = data;
+        }
+        else{
+        //create a new calendar in DB
+        }
     }
     addApointment(added) { 
             added.startDate.setSeconds(0) //collisions accured because of seconds -> reset seconds to 0
@@ -84,15 +89,15 @@ export default class User {
               throw("Event Collision")
             }
         }
-    };
+    }
     editApointment(toEdit) {
-        
+
     }
     deleteApointment(toDelete){
-
-    };
+      
+    }
     getCalendar() {
-        return this.data;
+        
     }
     notify(user, message) {
 

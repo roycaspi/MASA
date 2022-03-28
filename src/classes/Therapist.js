@@ -6,4 +6,10 @@ export default class Therapist extends CareGiver {
         super(personalDetails, data);
         this.speciality = speciality;
     }
+    notifyPatient(patient, message){
+
+    }
+    cancelAll() {
+        
+    }
 }
