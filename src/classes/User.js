@@ -77,42 +77,41 @@ export default class User {
         }
     }
     addApointment(added) { 
-        //     added.startDate.setSeconds(0) //collisions accured because of seconds -> reset seconds to 0
-        //     added.endDate.setSeconds(0)
-        //     const IdCountRef = doc(db, "Calendars", "IDCount");
-        //     const docSnap = await getDoc(IdCountRef);
-        //     const id = docSnap.data().count
-        //     await updateDoc(IdCountRef, { //update global id counter
-        //       count: increment(1)
-        //     });
-        //     const toAdd = {
-        //       title: added.title,
-        //       id: id,
-        //       participants: added.participants? Array.from(new Set(added.participants.split(',').concat(currentUser.email))) : [currentUser.email],
-        //       startDate: added.startDate,
-        //       endDate: added.endDate
-        //     }
-        //     coli = await isCollision(toAdd)
-        //     console.log(coli)
-        //     if(!coli){ 
-        //       if(toAdd.startDate <= toAdd.endDate){
-        //         toAdd.participants.forEach(async p => {//add event to participants
-        //           const q = query(eventsCollection, where('user', "==", p))
-        //           const querySnapshot = await getDocs(q);
-        //           const calendarRef = doc(db, 'Calendars', querySnapshot.docs[0].id);
-        //           await updateDoc(calendarRef, {
-        //               data: arrayUnion(toAdd)
-        //           });
-        //         })
-        //       }
-        //       else{
-        //         throw("Times Error")
-        //       }
-        //     }
-        //     else{
-        //       throw("Event Collision")
-        //     }
-        // }
+      added.startDate.setSeconds(0) //collisions accured because of seconds -> reset seconds to 0
+      added.endDate.setSeconds(0)
+      const IdCountRef = doc(db, "Calendars", "IDCount");
+      const docSnap = await getDoc(IdCountRef);
+      const id = docSnap.data().count
+      await updateDoc(IdCountRef, { //update global id counter
+        count: increment(1)
+      });
+      const toAdd = {
+        title: added.title,
+        id: id,
+        participants: added.participants? Array.from(new Set(added.participants.split(',').concat(currentUser.email))) : [currentUser.email],
+        startDate: added.startDate,
+        endDate: added.endDate
+      }
+      coli = await isCollision(toAdd)
+      console.log(coli)
+      if(!coli){ 
+        if(toAdd.startDate <= toAdd.endDate){
+          toAdd.participants.forEach(async p => {//add event to participants
+            const q = query(eventsCollection, where('user', "==", p))
+            const querySnapshot = await getDocs(q);
+            const calendarRef = doc(db, 'Calendars', querySnapshot.docs[0].id);
+            await updateDoc(calendarRef, {
+                data: arrayUnion(toAdd)
+            });
+          })
+        }
+        else{
+          throw("Times Error")
+        }
+      }
+      else{
+        throw("Event Collision")
+      }
     }
     editApointment(toEdit) {
 

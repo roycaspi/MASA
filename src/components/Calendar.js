@@ -7,6 +7,7 @@ import { ViewState,
 import {
   Scheduler,
   DayView,
+  Resources,
   Appointments,
   AppointmentForm,
   AppointmentTooltip,
@@ -328,6 +329,35 @@ function Calendar() {
             basicLayoutComponent={BasicLayout}
             textEditorComponent={TextEditor}
             readOnly={!isTherapist}
+          />
+          <Resources
+            data={[{
+              fieldName: 'roomId',
+              title: 'Room',
+              // instances: ['Room 12', 'Room 2'], //todo
+            },
+            {
+              fieldName: 'participants',
+              title: 'Participants',
+              //instances: owners, get from DB
+              allowMultiple: true,
+            },
+            {
+              fieldName: 'type',
+              title: 'Type',
+              instances: [{
+                name: 'Physiotherapy',
+                id: 1,
+               },{
+                 name: 'Occupational Therapy',
+                 id: 2,
+                },{
+                  name: 'Psychologist',
+                  id: 3
+                }],
+            }
+          ]}
+            mainResourceName="type"
           />
         </Scheduler>
       </Paper>
