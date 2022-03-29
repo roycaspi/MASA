@@ -1,7 +1,8 @@
 
 
 export class AppointmentDetails {
-    constructor(patients, therapists, startTime, endTime, repeat, room){
+    constructor(type, patients, therapists, startTime, endTime, repeat, room){
+        this.type = type;
         this.patients = patients;
         this.therapists = therapists;
         this.startTime = startTime;
