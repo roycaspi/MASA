@@ -21,6 +21,7 @@ import {db} from '../firebase'
 import {collection, getDocs, doc, updateDoc, arrayUnion, 
   query, where, getDoc, increment } from 'firebase/firestore'
 import { useAuth } from "../contexts/AuthContext"
+import { participants, rooms } from './eventFields';
 
 
 const eventsCollection = collection(db, 'Calendars');
@@ -71,6 +72,7 @@ function Calendar() {
     const [error, setError] = useState("")
     const [appointments, setAppointments] = useState([]);
     const [isTherapist, setIsTherapist] = useState(false)
+    const [resources, setResources] = useState([]);
     
     async function isCollision(toAdd) {
       coli = false;
@@ -120,6 +122,20 @@ function Calendar() {
             }))
             console.log(events)
             setAppointments(events)
+            const res = [
+              {
+                fieldName: 'roomId',
+                title: 'Room',
+                instances: rooms,
+              },
+              {
+                fieldName: 'participants',
+                title: 'Participants',
+                instances: participants,
+                allowMultiple: true,
+              },
+            ];
+            setResources(res)
         } catch(err) {
             console.log(err)
         }
@@ -331,32 +347,7 @@ function Calendar() {
             readOnly={!isTherapist}
           />
           <Resources
-            data={[{
-              fieldName: 'roomId',
-              title: 'Room',
-              // instances: ['Room 12', 'Room 2'], //todo
-            },
-            {
-              fieldName: 'participants',
-              title: 'Participants',
-              //instances: owners, get from DB
-              allowMultiple: true,
-            },
-            {
-              fieldName: 'type',
-              title: 'Type',
-              instances: [{
-                name: 'Physiotherapy',
-                id: 1,
-               },{
-                 name: 'Occupational Therapy',
-                 id: 2,
-                },{
-                  name: 'Psychologist',
-                  id: 3
-                }],
-            }
-          ]}
+            data={resources}
             mainResourceName="type"
           />
         </Scheduler>
