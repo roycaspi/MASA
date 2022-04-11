@@ -47,8 +47,8 @@ export default function Signup() {
           <h2 className="text-center mb-4">Sign Up</h2>
           {error && <Alert variant="danger">{error}</Alert>}
           <Form onSubmit={handleSubmit}>
-            <Button onClick={() => setTypeValue('T')}>Therapist</Button>
-            <Button onClick={() => setTypeValue('P')}>Patient</Button>
+            <Button onClick={() => setTypeValue('Therapist')}>Therapist</Button>
+            <Button onClick={() => setTypeValue('Patient')}>Patient</Button>
             <Form.Group id="firstName">
               <Form.Label>First Name</Form.Label>
               <Form.Control type="text" name="firstName" ref={firstNameRef} required />

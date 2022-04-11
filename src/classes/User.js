@@ -1,14 +1,18 @@
 import React from "react"
+import { getData } from "../contexts/DB";
 
 export class PersonalDetails {
-    constructor(fname, lname, id, type, email, phoneNumber, department){
+    constructor(fname, lname, id, email, phoneNumber, dob, department){
         this.id = id;
+        this.dob = dob;
         this.firstName = fname;
         this.lastName = lname;
         this.email = email;
         this.phoneNumber = phoneNumber;
-        this.type = type;
         this.department = department;
+    }
+    get dob() {
+      return this.dob;
     }
     get firtName() {
       return this.firstName;
@@ -24,9 +28,6 @@ export class PersonalDetails {
     }
     get phoneNumber() {
       return this.phoneNumber;
-    }
-    get type() {
-      return this.type;
     }
     get department() {
       return this.department;
@@ -67,17 +68,17 @@ async function isCollision(toAdd) {
 }
 
 export default class User {
-    constructor(personalDetails, data) {
+    constructor(personalDetails, uid, type, data = [], department) {
+        this.type = type;
+        this.attendants = [];
+        this.therapists = [];
+        this.department = department;
         this.personalDetails = personalDetails;
-        if(data){
-          this.data = data;
-        }
-        else{
-        //create a new calendar in DB
-        }
+        this.uid = uid;
+        this.data = data;
     }
     addApointment(toAdd) { 
-      this.data.push(toAdd);
+
     }
     editApointment(toEdit) {
       
@@ -85,8 +86,29 @@ export default class User {
     deleteApointment(toDelete){
       
     }
-    get calendar() {
-        return this.data;
+    get type() {
+      return this.type;
+    }
+    get attendants() {
+      return this.attendants;
+    }
+    get therapists() {
+      return this.therapists;
+    }
+    get permission() {
+      return this.permission;
+    }
+    get department() {
+      return this.department;
+    }
+    get uid(){
+      return this.uid;
+    }
+    get personalDetails() {
+      return this.personalDetails;
+    }
+    get data() {
+        return getData(this);
     }
     notify(user, message) {
 

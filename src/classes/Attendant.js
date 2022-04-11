@@ -3,9 +3,9 @@ import PatientSide from "./PatientSide";
 
 
 export default class Attendant extends PatientSide {
-    constructor(personalDetails, data, patients, permissions) {
+    constructor(personalDetails, data, patients, permission) {
         super(personalDetails, data);
         this.patients = patients;
-        this.permissions = permissions;
+        this.permission = permission;
     }
 }

@@ -22,6 +22,7 @@ import {collection, getDocs, doc, updateDoc, arrayUnion,
   query, where, getDoc, increment } from 'firebase/firestore'
 import { useAuth } from "../contexts/AuthContext"
 import { participants, rooms } from './eventFields';
+import { getData, addEvent, editEvent, removeEvent } from "../contexts/DB"
 
 
 const eventsCollection = collection(db, 'Calendars');
@@ -113,13 +114,7 @@ function Calendar() {
             const querySnapshot = await getDocs(q);
             const calendarRef = doc(db, 'Calendars', querySnapshot.docs[0].id)
             const calenderSnapShot = await getDoc(calendarRef);
-            const events = calenderSnapShot.data().data.map(e => ({
-              title: e.title,
-              id: e.id,
-              startDate: e.startDate.toDate(),
-              endDate: e.endDate.toDate(),
-              participants: e.participants
-            }))
+            const events = getData(currentUser.Id)
             console.log(events)
             setAppointments(events)
             const res = [
