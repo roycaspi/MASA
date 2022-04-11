@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from "react"
 import { auth, db } from "../firebase"
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc, setDoc, addDoc, collection } from 'firebase/firestore'
+import User from "../classes/User";
 
 
 const AuthContext = React.createContext()
@@ -14,24 +15,64 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState()
   const [loading, setLoading] = useState(true)
 
-  async function signup(email, password, firstName, lastName, type) { 
-    if(type === null){
+  async function signup(user, password) { 
+    if(user.personalDetails.type === null){
       throw "Type of user not chosen"
     }
-    const IdCountRef = doc(db, "Users", email);
+    const IdCountRef = doc(db, "Users", user.uid);
     const docSnap = await getDoc(IdCountRef);
     if(docSnap.exists()) {
       throw "Email already exists in system"
     }
-    await createUserWithEmailAndPassword(auth, email, password)
-    await addDoc(collection(db, "Calendars"), { //create new calendar document in db
-      data: [],
-      user: email
-    });
-    return setDoc(doc(db, "Users", email), { //create new user document in db
-      "First Name": firstName,
-      "Last Name": lastName,
-      type: type
+    await createUserWithEmailAndPassword(auth, user.personalDetails.email, password)
+    let userDocRef;
+    if(user.personalDetails.type == "Patient"){
+      userDocRef = await setDoc(collection(db, "Patients"), { //create new calendar document in db
+        "Personal Details": { "Date of Birth":user.personalDetails.dob,
+                              "Email": user.personalDetails.email, 
+                              "First Name": user.personalDetails.firstName,
+                              "Last Name": user.personalDetails.lastName,
+                              "Id": user.personalDetails.id,
+                              "Phone Number": user.personalDetails.phoneNumber},
+        "Data": user.data,
+        "Department": user.department,
+        "Attendants": user.attendants,
+        "Therapists": user.therapists,
+        "Type": user.type,
+        "Permission": user.permission
+      });
+    }
+    else if(user.personalDetails.type == "Therapist"){
+      userDocRef = await setDoc(collection(db, "Therapists"), { //create new calendar document in db
+        "Personal Details": { "Date of Birth":user.personalDetails.dob,
+                              "Email": user.personalDetails.email, 
+                              "First Name": user.personalDetails.firstName,
+                              "Last Name": user.personalDetails.lastName,
+                              "Id": user.personalDetails.id,
+                              "Phone Number": user.personalDetails.phoneNumber},
+        "Data": user.data,
+        "Department": user.department,
+        "Attendants": user.attendants,
+        "Therapists": user.therapists,
+        "Type": user.type,
+        "Speciality": user.speciality
+      });
+    }
+    else if(user.personalDetails.type == "Attendant"){
+      userDocRef = await setDoc(collection(db, "Attendants"), { //create new calendar document in db
+        "Personal Details": { "Email": user.personalDetails.email, 
+                              "First Name": user.personalDetails.firstName,
+                              "Last Name": user.personalDetails.lastName,
+                              "Phone Number": user.personalDetails.phoneNumber},
+        "Data": user.data,
+        "Department": user.department,
+        "Patients": user.patients,
+        "Type": user.type,
+        "Permission": user.permission
+      });
+    }
+    return setDoc(doc(db, "Users", user.uid), { //create new user document in db
+      Pointer: userDocRef
     });
   }
 
