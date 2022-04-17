@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
     await createUserWithEmailAndPassword(auth, user.personalDetails.email, password)
     let userDocRef;
     if(user.personalDetails.type == "Patient"){
-      userDocRef = await setDoc(collection(db, "Patients"), { //create new calendar document in db
+      userDocRef = await setDoc(collection(db, "Patients"), { //create new patient document in db
         "Personal Details": { "Date of Birth":user.personalDetails.dob,
                               "Email": user.personalDetails.email, 
                               "First Name": user.personalDetails.firstName,
@@ -43,7 +43,7 @@ export function AuthProvider({ children }) {
       });
     }
     else if(user.personalDetails.type == "Therapist"){
-      userDocRef = await setDoc(collection(db, "Therapists"), { //create new calendar document in db
+      userDocRef = await setDoc(collection(db, "Therapists"), { //create new therapist document in db
         "Personal Details": { "Date of Birth":user.personalDetails.dob,
                               "Email": user.personalDetails.email, 
                               "First Name": user.personalDetails.firstName,
@@ -59,7 +59,7 @@ export function AuthProvider({ children }) {
       });
     }
     else if(user.personalDetails.type == "Attendant"){
-      userDocRef = await setDoc(collection(db, "Attendants"), { //create new calendar document in db
+      userDocRef = await setDoc(collection(db, "Attendants"), { //create new attendant document in db
         "Personal Details": { "Email": user.personalDetails.email, 
                               "First Name": user.personalDetails.firstName,
                               "Last Name": user.personalDetails.lastName,

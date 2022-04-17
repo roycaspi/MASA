@@ -1,5 +1,5 @@
 import React from "react"
-import { getData } from "../contexts/DB";
+import { getDataFromUser } from "../contexts/DB";
 
 export class PersonalDetails {
     constructor(fname, lname, id, email, phoneNumber, dob, department){
@@ -34,38 +34,38 @@ export class PersonalDetails {
     }
 }
 
-async function isCollision(toAdd) {
-    coli = false;
-    for(let p in toAdd.participants) { // check for events collisions
-      console.log(p)
-      const q = query(eventsCollection, where('user', "==", toAdd.participants[p]))
-      const querySnapshot = await getDocs(q);
-      if(querySnapshot.size == 0) {
-        throw setError("One of the users does not exist")
-      }
-      const participantEvents = querySnapshot.docs[0].data().data;
-      if(participantEvents.length != 0){
-        for(let event in participantEvents) {
-          console.log(coli)
-          let {startDate: existsStart, endDate: existsEnd} = participantEvents[event];
-          let {startDate: newStart, endDate: newEnd} = toAdd;
-          existsStart = existsStart.toDate()
-          existsEnd = existsEnd.toDate()
-          console.log(existsStart, existsEnd, newStart, newEnd)
-          console.log(!(existsEnd <= newStart || existsStart >= newEnd))
-          if(participantEvents[event].id != toAdd.id){
-            console.log(coli)
-            coli = (coli)? true : !(existsEnd <= newStart || existsStart >= newEnd)
-          }
-          console.log(coli)
-          if(coli){
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-}
+// async function isCollision(toAdd) {
+//     coli = false;
+//     for(let p in toAdd.participants) { // check for events collisions
+//       console.log(p)
+//       const q = query(eventsCollection, where('user', "==", toAdd.participants[p]))
+//       const querySnapshot = await getDocs(q);
+//       if(querySnapshot.size == 0) {
+//         throw setError("One of the users does not exist")
+//       }
+//       const participantEvents = querySnapshot.docs[0].data().data;
+//       if(participantEvents.length != 0){
+//         for(let event in participantEvents) {
+//           console.log(coli)
+//           let {startDate: existsStart, endDate: existsEnd} = participantEvents[event];
+//           let {startDate: newStart, endDate: newEnd} = toAdd;
+//           existsStart = existsStart.toDate()
+//           existsEnd = existsEnd.toDate()
+//           console.log(existsStart, existsEnd, newStart, newEnd)
+//           console.log(!(existsEnd <= newStart || existsStart >= newEnd))
+//           if(participantEvents[event].id != toAdd.id){
+//             console.log(coli)
+//             coli = (coli)? true : !(existsEnd <= newStart || existsStart >= newEnd)
+//           }
+//           console.log(coli)
+//           if(coli){
+//             return true;
+//           }
+//         }
+//       }
+//     }
+//     return false;
+// }
 
 export default class User {
     constructor(personalDetails, uid, type, data = [], department) {
@@ -108,7 +108,7 @@ export default class User {
       return this.personalDetails;
     }
     get data() {
-        return getData(this);
+        return getDataFromUser(this);
     }
     notify(user, message) {
 
