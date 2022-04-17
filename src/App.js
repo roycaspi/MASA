@@ -1,8 +1,9 @@
 import React from "react"
-import Signup from "./components/Signup"
+import Signup from "./components/BeforeSignUp"
 import Login from "./components/Login"
 import FrontPage from "./components/FrontPage"
 import PrivateRoute from "./components/PrivateRoute"
+import PatientSignUp from "./components/patientSignUp"
 import { Container } from "react-bootstrap"
 import { AuthProvider } from "./contexts/AuthContext"
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom"
@@ -23,6 +24,7 @@ function App() {
               <PrivateRoute exact path="/" component={FrontPage} />
               <Route exact path="/signup" component={Signup} />
               <Route path="/login" component={Login} />
+              <Route path="/patientSignup" component={PatientSignUp} />
             </Switch>
           </AuthProvider>
         </Router>

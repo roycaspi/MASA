@@ -13,7 +13,7 @@ export default function Signup() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const history = useHistory()
-  const [typeValue, setTypeValue] = useState(null);
+  const [typeValue, setTypeValue] = useState("");
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -48,6 +48,7 @@ export default function Signup() {
           {error && <Alert variant="danger">{error}</Alert>}
           <Form onSubmit={handleSubmit}>
             <Button onClick={() => setTypeValue('Therapist')}>Therapist</Button>
+            <Button onClick={() => setTypeValue('Attendant')}>Therapist</Button>
             <Button onClick={() => setTypeValue('Patient')}>Patient</Button>
             <Form.Group id="firstName">
               <Form.Label>First Name</Form.Label>
