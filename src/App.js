@@ -3,7 +3,9 @@ import Signup from "./components/BeforeSignUp"
 import Login from "./components/Login"
 import FrontPage from "./components/FrontPage"
 import PrivateRoute from "./components/PrivateRoute"
-import PatientSignUp from "./components/patientSignUp"
+import PatientSignUp from "./components/PatientSignUp"
+import TherapistSignUp from "./components/TherapistSignUp"
+import AttendantSignUp from "./components/AttendantSignUp"
 import { Container } from "react-bootstrap"
 import { AuthProvider } from "./contexts/AuthContext"
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom"
@@ -25,6 +27,8 @@ function App() {
               <Route exact path="/signup" component={Signup} />
               <Route path="/login" component={Login} />
               <Route path="/patientSignup" component={PatientSignUp} />
+              <Route path="/therapistSignup" component={TherapistSignUp} />
+              <Route path="/attendantSignup" component={AttendantSignUp} />
             </Switch>
           </AuthProvider>
         </Router>

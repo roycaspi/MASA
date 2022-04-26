@@ -2,11 +2,11 @@ import PatientSide from "./PatientSide";
 
 
 export default class Patient extends PatientSide {
-    constructor(personalDetails, data, attendants, therapists, permissions) {
-        super(personalDetails, data);
-        this.attendants = attendants;
-        this.therapists = therapists;
-        this.permissions = permissions;
+    constructor(personalDetails, department, therapists = [], permission = "0",
+     attendants = [], data = [], uid = null,) {
+        super(personalDetails, uid, "Patient", department, permission, data);
+        this.attendants = attendants
+        this.therapists = therapists
     }
     addAttendant(attendant) {
         this.attendants.push(attendant);
@@ -19,10 +19,10 @@ export default class Patient extends PatientSide {
             }
         }
     }
-    get attendants() {
-        return this.attendants;
-    }
-    get therapists() {
-        return this.therapists
-    }
+    // get attendants() {
+    //     return this.attendants;
+    // }
+    // get therapists() {
+    //     return this.therapists
+    // }
 }
