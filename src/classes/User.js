@@ -1,37 +1,52 @@
 import React from "react"
 import { getDataFromUser } from "../contexts/DB";
 
+
 export class PersonalDetails {
-    constructor(fname, lname, id, email, phoneNumber, dob, department){
+    constructor(fname, lname, id, email, phoneNumber, dob){
         this.id = id;
         this.dob = dob;
         this.firstName = fname;
         this.lastName = lname;
         this.email = email;
         this.phoneNumber = phoneNumber;
-        this.department = department;
-    }
-    get dob() {
-      return this.dob;
-    }
-    get firtName() {
-      return this.firstName;
-    }
-    get lastName() {
-      return this.lastName;
-    }
-    get id() {
-      return this.id;
-    }
-    get email() {
-      return this.email;
-    }
-    get phoneNumber() {
-      return this.phoneNumber;
-    }
-    get department() {
-      return this.department;
-    }
+  }
+    // get dob() {
+    //   return this.dob;
+    // }
+    // set dob(v){
+    //   this.dob = v
+    // }
+    // get firtName() {
+    //   return this.firstName;
+    // }
+    // set firstName(v){
+    //   this.firstName = v
+    // }
+    // get lastName() {
+    //   return this.lastName;
+    // }
+    // set lastName(v){
+    //   this.lastName = v
+    // }
+    // get id() {
+    //   return this.id;
+    // }
+    // set id(v){
+    //   this.id = v
+    // }
+    // get email() {
+    //   return this.email;
+    // }
+    // set email(v){
+    //   this.email = v
+    // }
+    // get phoneNumber() {
+    //   return this.phoneNumber;
+    // }
+    // set phoneNumber(v){
+    //   this.phoneNumber = v
+    // }
 }
 
 // async function isCollision(toAdd) {
@@ -68,14 +83,12 @@ export class PersonalDetails {
 // }
 
 export default class User {
-    constructor(personalDetails, uid, type, data = [], department) {
-        this.type = type;
-        this.attendants = [];
-        this.therapists = [];
-        this.department = department;
-        this.personalDetails = personalDetails;
-        this.uid = uid;
-        this.data = data;
+    constructor(personalDetails, uid, type, department, data) {
+      this.uid = uid;
+      this.type = type;
+      this.department = department;
+      this.personalDetails = personalDetails;
+      this.data = data;
     }
     addApointment(toAdd) { 
 
@@ -86,29 +99,65 @@ export default class User {
     deleteApointment(toDelete){
       
     }
-    get type() {
-      return this.type;
-    }
-    get attendants() {
-      return this.attendants;
-    }
-    get therapists() {
-      return this.therapists;
-    }
-    get permission() {
-      return this.permission;
-    }
-    get department() {
-      return this.department;
-    }
+    // get type() {
+    //   return this.type;
+    // }
+    // set type(v){
+    //   this.type = v
+    // }
+    // get attendants() {
+    //   return this.attendants;
+    // }
+    // set attendants(v){
+    //   this.attendants = v
+    // }
+    // get therapists() {
+    //   return this.therapists;
+    // }
+    // set therapists(v){
+    //   this.therapists = v
+    // }
+    // get permission() {
+    //   return this.permission;
+    // }
+    // set permission(v){
+    //   this.uid = v
+    // }
+    // get department() {
+    //   return this.department;
+    // }
+    // set department(v){
+    //   this.uid = v
+    // }
     get uid(){
-      return this.uid;
+      return this._uid_;
     }
-    get personalDetails() {
-      return this.personalDetails;
+    set uid(v){
+      this._uid_ = v
     }
-    get data() {
-        return getDataFromUser(this);
+    // get data() {
+    //     return getDataFromUser(this);
+    // }
+    // set data(v){
+    //   this.data = v
+    // }
+    get dob() {
+      return this.personalDetails.dob;
+    }
+    get firtName() {
+      return this.personalDetails.firstName;
+    }
+    get lastName() {
+      return this.personalDetails.lastName;
+    }
+    get id() {
+      return this.personalDetails.id;
+    }
+    get email() {
+      return this.personalDetails.email;
+    }
+    get phoneNumber() {
+      return this.personalDetails.phoneNumber;
     }
     notify(user, message) {
 

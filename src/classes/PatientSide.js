@@ -2,11 +2,11 @@ import React from "react"
 import User from "./User";
 
 export default class PatientSide extends User {
-    constructor(personalDetails, uid, type, data = [], department, permission = 0) {
-        super(personalDetails, uid, type, data, department);
+    constructor(personalDetails, uid, type, department, permission, data) {
+        super(personalDetails, uid, type, department, data);
         this.permission = permission;
     }
-    get permission() {
-        return this.permission;
-    }
+    // get permission() {
+    //     return this.permission;
+    // }
 }

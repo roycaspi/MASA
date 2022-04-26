@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react"
-import { Form, Button, Card, Alert, Container} from "react-bootstrap"
+import { Form, Button, Card, Alert, Container, ButtonGroup} from "react-bootstrap"
 import { useAuth } from "../contexts/AuthContext"
 import { Link, useHistory } from "react-router-dom"
 
@@ -15,26 +15,6 @@ export default function Signup() {
   const history = useHistory()
   const [typeValue, setTypeValue] = useState("");
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-
-    if (passwordRef.current.value !== passwordConfirmRef.current.value) {
-      setLoading(false);
-      setError("Passwords do not match")
-      return 
-    }
-
-    try {
-      await signup(emailRef.current.value, passwordRef.current.value, firstNameRef.current.value, 
-        lastNameRef.current.value, typeValue)
-      history.push("/")
-    } catch(e) {
-      setLoading(false)
-      setError(e)
-    }
-  }
   return (
     <>
     <Container
@@ -46,10 +26,12 @@ export default function Signup() {
         <Card.Body>
           <h2 className="text-center mb-4">Sign Up</h2>
           {error && <Alert variant="danger">{error}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Link to="/patientSignup" className="btn btn-primary">Patient</Link>
-            <Button onClick={() => setTypeValue('Attendant')}>Therapist</Button>
+          <Form>
+          <ButtonGroup style={{width: "100%"}}>
+            <Link to="/patientSignup" className="btn btn-primary" style={{align: "center"}}>Patient</Link>
+            <Link to="/therapistSignup" className="btn btn-primary" style={{align: "center"}}>Therapist</Link>
             <Button onClick={() => setTypeValue('Patient')}>Attendant</Button>
+          </ButtonGroup>
           </Form>
         </Card.Body>
       </Card>
