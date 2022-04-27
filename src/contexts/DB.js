@@ -14,13 +14,13 @@ export async function getDataFromUser(user) {
     // const q = query(usersCollection, where('user', '==', user.uid)); 
     // const querySnapshot = await getDocs(q);
     const userDocPointerRef = doc(db, 'Users',  user.uid)
-    const userDocPointerSnapShot = getDoc(userDocPointerRef);
-    const userDocRef = doc(db, userDocPointerSnapShot.data().Pointer)
-    const userDocSnapShot = getDoc(userDocRef)
+    const userDocPointerSnapShot = await getDoc(userDocPointerRef);
+    const userDocRef = doc(db, userDocPointerSnapShot.data().Pointer.path)
+    const userDocSnapShot = await getDoc(userDocRef)
     let data = []
     userDocSnapShot.data().Data.forEach(async ref => { //get appointments from appointments refrences
         const appointmentDocRef = doc(db,  ref)
-        const appointmentDocSnap = getDoc(appointmentDocRef)
+        const appointmentDocSnap = await getDoc(appointmentDocRef)
         data.append(appointmentDocSnap.data().Data)
     })
     return data;
