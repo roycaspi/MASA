@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
     let userDocRef;
     if(user.type === "Patient"){
       const docData = {
-                        "Personal Details": { "Date of Birth":user.personalDetails.dob,
+                        "PersonalDetails": { "Date of Birth":user.personalDetails.dob,
                             "Email": user.personalDetails.email, 
                             "First Name": user.personalDetails.firstName,
                             "Last Name": user.personalDetails.lastName,
@@ -45,29 +45,32 @@ export function AuthProvider({ children }) {
                         "Attendants": user.attendants,
                         "Therapists": user.therapists,
                         "Type": user.type,
-                        "Permission": user.permission
+                        "Permission": user.permission,
+                        uid: user.uid
                       }
       userDocRef = await addDoc(collection(db, "Patients"), docData);//create new patient document in db
     }
     else if(user.type === "Therapist"){
       console.log("enter if therapist")
-      userDocRef = await setDoc(collection(db, "Therapists"), { //create new therapist document in db
-        "Personal Details": { "Date of Birth":user.personalDetails.dob,
-                              "Email": user.personalDetails.email, 
-                              "First Name": user.personalDetails.firstName,
-                              "Last Name": user.personalDetails.lastName,
-                              "Id": user.personalDetails.id,
-                              "Phone Number": user.personalDetails.phoneNumber},
-        "Data": user.data,
-        "Department": user.department,
-        "Patients": user.patients,
-        "Type": user.type,
-        "Speciality": user.speciality
-      });
+      const docData = { 
+          "PersonalDetails": { "Date of Birth":user.personalDetails.dob,
+                                "Email": user.personalDetails.email, 
+                                "First Name": user.personalDetails.firstName,
+                                "Last Name": user.personalDetails.lastName,
+                                "Id": user.personalDetails.id,
+                                "Phone Number": user.personalDetails.phoneNumber},
+          "Data": user.data,
+          "Department": user.department,
+          "Patients": user.patients,
+          "Type": user.type,
+          "Speciality": user.speciality,
+          uid: user.uid
+      }
+      userDocRef = await addDoc(collection(db, "Therapists"), docData) //create new therapist document in db
     }
     else if(user.type === "Attendant"){
       userDocRef = await setDoc(collection(db, "Attendants"), { //create new attendant document in db
-        "Personal Details": { "Email": user.personalDetails.email, 
+        "PersonalDetails": { "Email": user.personalDetails.email, 
                               "First Name": user.personalDetails.firstName,
                               "Last Name": user.personalDetails.lastName,
                               "Phone Number": user.personalDetails.phoneNumber},
@@ -75,7 +78,8 @@ export function AuthProvider({ children }) {
         "Department": user.department,
         "Patients": user.patients,
         "Type": user.type,
-        "Permission": user.permission
+        "Permission": user.permission,
+        uid: user.uid
       });
     }
     return setDoc(doc(db, "Users", user.uid), { //create new user document in db

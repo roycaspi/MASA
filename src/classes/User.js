@@ -3,7 +3,7 @@ import { getDataFromUser } from "../contexts/DB";
 
 
 export class PersonalDetails {
-    constructor(fname, lname, id, email, phoneNumber, dob){
+    constructor(fname, lname, id = "", email, phoneNumber, dob = new Date()){
         this.id = id;
         this.dob = dob;
         this.firstName = fname;

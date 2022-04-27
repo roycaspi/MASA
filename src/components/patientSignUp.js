@@ -42,27 +42,33 @@ export default function Signup() {
   
 
   //todo: check if function works
-  useEffect(async () => {
+  async function handleDepartment(department){
+    setDepartmentValue(department)
     let therapistsList = [];
-    const physioQ = query(therapistsCollection, where('Speciality', 'in', ['Physiotherapy']));
+    const physioQ = query(therapistsCollection, where('Speciality', 'array-contains-any', ['Physiotherapy']), 
+    where('Department', '==', department));
     const physioQuerySnapshot = await getDocs(physioQ);
     physioQuerySnapshot.forEach((therapistDoc) => {
-      therapistsList.append({
+      therapistsList.push({
         value: therapistDoc.ref, //refrence to the therapists' document
         label: therapistDoc.data().PersonalDetails["First Name"] + " " + therapistDoc.data().PersonalDetails["Last Name"]
       })
     })
     setPhysiotherapistsList(therapistsList)
-    const occTherapyQ = query(therapistsCollection, where('Speciality', 'in', ['Occupational Therapy']));
+    const occTherapyQ = query(therapistsCollection, where('Speciality', 'array-contains-any', ['Occupational Therapy']),
+    where('Department', '==', department));
     const occQuerySnapshot = await getDocs(occTherapyQ);
     occQuerySnapshot.forEach((therapistDoc) => {
-      therapistsList.append({
-        value: therapistDoc.ref, //refrence to the therapists' document
-        label: therapistDoc.data().PersonalDetails["First Name"] + " " + therapistDoc.data().PersonalDetails["Last Name"]
-      })
+      if(!therapistDoc.ref in therapistsList){ //makes sure a therapist apears only once in the list
+        therapistsList.push({
+          value: therapistDoc.ref, //refrence to the therapists' document
+          label: therapistDoc.data().PersonalDetails["First Name"] + " " + therapistDoc.data().PersonalDetails["Last Name"]
+        })
+      }
     })
+    console.log(therapistsList)
     setOccupationalTherapistsList(therapistsList)
-  }, [])
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -137,13 +143,8 @@ export default function Signup() {
             </Form.Group>
             <Form.Group id="department">
               <Form.Label>Department</Form.Label>
-              {/* <DropdownButton
-                options={departments} variant="outline-secondary" title={departmentValue} id="input-group-dropdown-1" 
-                value={departments} onSelect={handleSelect} required>
-               <Dropdown.Item eventKey={"Tel-Hai"}>Tel-Hai</Dropdown.Item> 
-              </DropdownButton> */}
               <RequiredSelect placeholder="Select..." SelectComponent={BaseSelect} 
-              onChange={(e) => setDepartmentValue(e.value)} options={departments} required/>
+              onChange={(e) => handleDepartment(e.value)} options={departments} required/>
             </Form.Group>
             <Form.Group id="therapists">
               <Form.Label>Physiotherapist</Form.Label>
