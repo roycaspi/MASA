@@ -38,19 +38,18 @@ export default function Signup() {
 
     if(idRef.current.value.length != 9){
       setLoading(false)
-      return setError("Invalid Id")
+      setError("Invalid Id")
+      return window.scrollTo(0, 0)
     }
     if(phoneNumberRef.current.value.length != 10){
       setLoading(false)
-      return setError("Invalid Phone number")
-    }
-    if(departmentValue === ""){
-      setLoading(false)
-      return setError("Department not chosen")
+      setError("Invalid Phone number")
+      return window.scrollTo(0, 0)
     }
     if (passwordRef.current.value !== passwordConfirmRef.current.value) {
       setLoading(false);
-      return setError("Passwords do not match") 
+      setError("Passwords do not match")
+      return window.scrollTo(0, 0)
     }
 
     try {
@@ -77,9 +76,9 @@ export default function Signup() {
           {error && <Alert variant="danger">{error}</Alert>}
           <Form onSubmit={handleSubmit}>
             <ButtonGroup style={{width: "100%"}}>
-            <Link to="/patientSignup" className="btn btn-primary" style={{align: "center"}}>Patient</Link>
+              <Link to="/patientSignup" className="btn btn-primary" style={{align: "center"}}>Patient</Link>
               <Link to="/therapistSignup" className="btn btn-primary" style={{align: "center"}}>Therapist</Link>
-              <Link to="/therapistSignup" className="btn btn-primary" style={{align: "center"}}>Attendant</Link>
+              <Link to="/attendantSignup" className="btn btn-primary" style={{align: "center"}}>Attendant</Link>
             </ButtonGroup>
             <Form.Group id="id">
               <Form.Label>Id</Form.Label>
