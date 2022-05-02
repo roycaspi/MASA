@@ -17,6 +17,8 @@
     "firebase-firestore-lite": "^1.0.3",
     "prop-types": "^15.8.1",
     "react": "^17.0.2",
+    "react-alert": "^7.0.3",
+    "react-alert-template-basic": "^1.0.2",
     "react-bootstrap": "^2.1.2",
     "react-date-picker": "^8.4.0",
     "react-dom": "^17.0.2",

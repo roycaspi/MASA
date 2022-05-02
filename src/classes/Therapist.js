@@ -13,4 +13,7 @@ export default class Therapist extends CareGiver {
     cancelAll() {
         
     }
+    addPatient(user) {
+        
+    }
 }

@@ -9,6 +9,12 @@ let coli = false
 /*
     participants in Appointments document are refrences to the relevant patient/therapis/attendant documents
 */
+export async function getUserDocRef(uid){
+    const userDocPointerRef = doc(db, 'Users', uid)
+    const userDocPointerSnapShot = await getDoc(userDocPointerRef);
+    const userDocRef = doc(db, userDocPointerSnapShot.data().Pointer.path)
+    return userDocRef;
+}
 
 export async function getDataFromUser(user) {
     // const q = query(usersCollection, where('user', '==', user.uid)); 
@@ -73,14 +79,17 @@ async function isCollision(toAdd) {
 export async function addEvent(added, user) {
     added.startDate.setSeconds(0) //collisions accured because of seconds -> reset seconds to 0
     added.endDate.setSeconds(0)
+    const adminDocRef = getUserDocRef(user.uid)
     const IdCountRef = doc(db, "Appointments", "IDCount");
     const docSnap = await getDoc(IdCountRef);
     const id = docSnap.data().count
     const toAdd = {
         "Data": {   "Title": added.title,
                     "Id": id,
-                    //todo: see in what type participants arrive in added 
-                    "Participants": added.participants? Array.from(new Set(added.participants.split(',').concat(user.email))) : [user.email],
+                    "Admin": adminDocRef,
+                    "Participants": added.participants? Array.from(added.participants, uid => getUserDocRef(uid))
+                     : [],
+                    "Room": added.roomId,
                     "Start Date": added.startDate,
                     "End Date": added.endDate }
         
@@ -88,10 +97,10 @@ export async function addEvent(added, user) {
     await updateDoc(IdCountRef, { //update id counter
         count: increment(1)
     });
-    coli = await isCollision(toAdd)
+    // coli = await isCollision(toAdd)
     if(!coli){ 
-        const appointmentDocRef = await addDoc(collection(db, "Appointments"), toAdd); //craete document for appointment
         if(toAdd.startDate <= toAdd.endDate){
+            const appointmentDocRef = await addDoc(collection(db, "Appointments"), toAdd); //craete document for appointment
             toAdd.participants.forEach(async p => {//add event to participants
                 // const q = query(eventsCollection, where('user', "==", p))
                 // const querySnapshot = await getDocs(q);

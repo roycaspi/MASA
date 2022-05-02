@@ -12,6 +12,9 @@ import {db} from '../firebase'
 import { departments } from '../data/departments'
 import RequiredSelect from "./RequiredSelect";
 
+
+
+
 const therapistsCollection = collection(db, 'Therapists');
 
 const Select = props => (
@@ -38,10 +41,12 @@ export default function Signup() {
   const [permissionValue, setPermissionValue] = useState("0");
   const [physiotherapistsList, setPhysiotherapistsList] = useState([])
   const [occupationalTherapistsList, setOccupationalTherapistsList] = useState([])
-  const [patientTherapistsList, setPatientTherapistsList] = useState([])
+  const [chosenPhysiotherapistsList, setChosenPhysiotherapistsList] = useState([])
+  const [chosenOccupationalTherapistsList, setChosenOccupationalTherapistsList] = useState([])
+  
   
 
-  //todo: check if function works
+
   async function handleDepartment(department){
     setDepartmentValue(department)
     let therapistsList = [];
@@ -52,6 +57,7 @@ export default function Signup() {
       therapistsList.push({
         value: therapistDoc.ref, //refrence to the therapists' document
         label: therapistDoc.data().PersonalDetails["First Name"] + " " + therapistDoc.data().PersonalDetails["Last Name"]
+        + " " + therapistDoc.data().PersonalDetails["Id"]
       })
     })
     setPhysiotherapistsList(therapistsList)
@@ -62,11 +68,11 @@ export default function Signup() {
       if(!therapistDoc.ref in therapistsList){ //makes sure a therapist apears only once in the list
         therapistsList.push({
           value: therapistDoc.ref, //refrence to the therapists' document
-          label: therapistDoc.data().PersonalDetails["First Name"] + " " + therapistDoc.data().PersonalDetails["Last Name"]
+          label: therapistDoc.data().PersonalDetails["First Name"] + " " + therapistDoc.data().PersonalDetails["Last Name"] 
+          + " " + therapistDoc.data().PersonalDetails["Id"]
         })
       }
     })
-    console.log(therapistsList)
     setOccupationalTherapistsList(therapistsList)
   }
 
@@ -77,25 +83,24 @@ export default function Signup() {
 
     if(idRef.current.value.length != 9){
       setLoading(false)
-      return setError("Invalid Id")
+      setError("Invalid Id")
+      return window.scrollTo(0, 0)
     }
     if(phoneNumberRef.current.value.length != 10){
       setLoading(false)
-      return setError("Invalid Phone number")
-    }
-    if(departmentValue === ""){
-      setLoading(false)
-      return setError("Department not chosen")
+      setError("Invalid Phone number")
+      return window.scrollTo(0, 0)
     }
     if (passwordRef.current.value !== passwordConfirmRef.current.value) {
       setLoading(false);
-      return setError("Passwords do not match") 
+      setError("Passwords do not match")
+      return window.scrollTo(0, 0)
     }
 
     try {
       const newUser = new Patient(new PersonalDetails(firstNameRef.current.value, lastNameRef.current.value,
         idRef.current.value, emailRef.current.value, phoneNumberRef.current.value, dobValue), departmentValue, 
-        patientTherapistsList, permissionValue)
+        Array.from(new Set(chosenOccupationalTherapistsList.concat(chosenPhysiotherapistsList))), permissionValue)
       await signup(newUser, passwordRef.current.value)
       history.push("/")
     } catch(e) {
@@ -113,12 +118,12 @@ export default function Signup() {
       <Card>
         <Card.Body>
           <h2 className="text-center mb-4">Sign Up</h2>
-          {error && <Alert variant="danger">{error}</Alert>}
+          {error && <Alert variant="danger" >{error}</Alert>}
           <Form onSubmit={handleSubmit}>
             <ButtonGroup style={{width: "100%"}}>
               <Link to="/patientSignup" className="btn btn-primary" style={{align: "center"}}>Patient</Link>
               <Link to="/therapistSignup" className="btn btn-primary" style={{align: "center"}}>Therapist</Link>
-              <Link to="/therapistSignup" className="btn btn-primary" style={{align: "center"}}>Attendant</Link>
+              <Link to="/attendantSignup" className="btn btn-primary" style={{align: "center"}}>Attendant</Link>
             </ButtonGroup>
             <Form.Group id="id">
               <Form.Label>Id</Form.Label>
@@ -148,10 +153,11 @@ export default function Signup() {
             </Form.Group>
             <Form.Group id="therapists">
               <Form.Label>Physiotherapist</Form.Label>
-              <RequiredSelect components={makeAnimated()} isMulti SelectComponent={BaseSelect} 
-              onChange={(e) => setPatientTherapistsList(e)} options={physiotherapistsList}/>
+              <Select components={makeAnimated()} isMulti SelectComponent={BaseSelect} 
+              onChange={(e) => setChosenPhysiotherapistsList(e)} options={physiotherapistsList}/>
               <Form.Label>Occupational Therapist</Form.Label>
-              <Select components={makeAnimated()} isMulti options={occupationalTherapistsList}></Select>
+              <Select components={makeAnimated()} isMulti SelectComponent={BaseSelect}
+               onChange={(e) => setChosenOccupationalTherapistsList(e)} options={occupationalTherapistsList}></Select>
             </Form.Group>
             <Form.Group id="email">
               <Form.Label>Email</Form.Label>
@@ -169,8 +175,8 @@ export default function Signup() {
               <Form.Label>Permission Level</Form.Label>
               <ButtonToolbar aria-label="Toolbar with button groups">
                 <ButtonGroup className="me-2" aria-label="First group" onClick={(v) => setPermissionValue(v.target.value)}>
-                  <Button value={1}>1</Button> <Button value={2}>2</Button> <Button value={3}>3</Button> 
-                  <Button value={4}>4</Button>
+                <Button value={"0"}>0</Button><Button value={"1"}>1</Button> <Button value={"2"}>2</Button> 
+                <Button value={"3"}>3</Button> <Button value={"4"}>4</Button>
                 </ButtonGroup>
               </ButtonToolbar>
             </Form.Group>

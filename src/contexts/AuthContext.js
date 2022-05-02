@@ -1,8 +1,10 @@
 import React, { useContext, useState, useEffect } from "react"
 import { auth, db } from "../firebase"
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc, setDoc, addDoc, collection, query, getDocs, where } from 'firebase/firestore'
-
+import { doc, getDoc, setDoc, addDoc, collection, query, getDocs, where, updateDoc, arrayUnion } from 'firebase/firestore'
+import Attendant from "../classes/Attendant";
+import Therapist from "../classes/Therapist";
+import Patient from "../classes/Patient";
 
 const AuthContext = React.createContext()
 const usersCollection = collection(db, 'Users');
@@ -30,7 +32,6 @@ export function AuthProvider({ children }) {
   catch(e){
     console.log(e)
   }
-    console.log(user)
     let userDocRef;
     if(user.type === "Patient"){
       const docData = {
@@ -39,7 +40,8 @@ export function AuthProvider({ children }) {
                             "First Name": user.personalDetails.firstName,
                             "Last Name": user.personalDetails.lastName,
                             "Id": user.personalDetails.id,
-                            "Phone Number": user.personalDetails.phoneNumber},
+                            "Phone Number": user.personalDetails.phoneNumber
+                          },
                         "Data": user.data,
                         "Department": user.department,
                         "Attendants": user.attendants,
@@ -49,45 +51,60 @@ export function AuthProvider({ children }) {
                         uid: user.uid
                       }
       userDocRef = await addDoc(collection(db, "Patients"), docData);//create new patient document in db
+      user.addSelfToTherapists(userDocRef)
+      // if(user.therapists.size != 0) { //add patient to therapist
+      //   user.therapists.forEach(async (therapist) => {
+      //     const therapistDocRef = doc(db, therapist.value.path)
+      //     await updateDoc(therapistDocRef, {
+      //       Patients: arrayUnion(userDocRef)
+      //     });
+      //   })
+      // }
     }
     else if(user.type === "Therapist"){
-      console.log("enter if therapist")
       const docData = { 
-          "PersonalDetails": { "Date of Birth":user.personalDetails.dob,
-                                "Email": user.personalDetails.email, 
-                                "First Name": user.personalDetails.firstName,
-                                "Last Name": user.personalDetails.lastName,
-                                "Id": user.personalDetails.id,
-                                "Phone Number": user.personalDetails.phoneNumber},
-          "Data": user.data,
-          "Department": user.department,
-          "Patients": user.patients,
-          "Type": user.type,
-          "Speciality": user.speciality,
-          uid: user.uid
-      }
+                          "PersonalDetails": { "Date of Birth":user.personalDetails.dob,
+                                                "Email": user.personalDetails.email, 
+                                                "First Name": user.personalDetails.firstName,
+                                                "Last Name": user.personalDetails.lastName,
+                                                "Id": user.personalDetails.id,
+                                                "Phone Number": user.personalDetails.phoneNumber},
+                          "Data": user.data,
+                          "Department": user.department,
+                          "Patients": user.patients,
+                          "Type": user.type,
+                          "Speciality": user.speciality,
+                          uid: user.uid
+                      }
       userDocRef = await addDoc(collection(db, "Therapists"), docData) //create new therapist document in db
     }
     else if(user.type === "Attendant"){
-      userDocRef = await setDoc(collection(db, "Attendants"), { //create new attendant document in db
-        "PersonalDetails": { "Email": user.personalDetails.email, 
-                              "First Name": user.personalDetails.firstName,
-                              "Last Name": user.personalDetails.lastName,
-                              "Phone Number": user.personalDetails.phoneNumber},
-        "Data": user.data,
-        "Department": user.department,
-        "Patients": user.patients,
-        "Type": user.type,
-        "Permission": user.permission,
-        uid: user.uid
-      });
+      const docData = { 
+                        "PersonalDetails": { "Email": user.personalDetails.email, 
+                                              "First Name": user.personalDetails.firstName,
+                                              "Last Name": user.personalDetails.lastName,
+                                              "Id": user.personalDetails.id,
+                                              "Phone Number": user.personalDetails.phoneNumber},
+                        "Data": user.data,
+                        "Department": user.department,
+                        "Patients": user.patients,
+                        "Type": user.type,
+                        "Permission": user.permission,
+                        uid: user.uid
+                      }
+      userDocRef = await addDoc(collection(db, "Attendants"), docData); //create new attendant document in db
+      user.addSelfToPatients(userDocRef)
+      // user.patients.forEach(async (patient) => { //add attendant to patient
+      //   const patientDocRef = doc(db, patient.value.path)
+      //   await updateDoc(patientDocRef, {
+      //     Patients: arrayUnion(userDocRef)
+      // });
+      // })
     }
     return setDoc(doc(db, "Users", user.uid), { //create new user document in db
       "Pointer": userDocRef,
       "Email": user.email
     });
-
-        //todo: update all the relevant therapists' patient array
   }
 
   function login(email, password) {
