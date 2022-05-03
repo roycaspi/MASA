@@ -3,7 +3,8 @@ import { auth, db } from "../firebase"
 import {collection, getDocs, doc, updateDoc, arrayUnion, query, where, getDoc, increment, addDoc } from 'firebase/firestore'
 
 
-const usersCollectionRef = collection(db, 'Users');
+const therapistsCollection = collection(db, 'Therapists');
+const patientsCollection = collection(db, 'Patients');
 let coli = false
 
 /*
@@ -14,6 +15,28 @@ export async function getUserDocRef(uid){
     const userDocPointerSnapShot = await getDoc(userDocPointerRef);
     const userDocRef = doc(db, userDocPointerSnapShot.data().Pointer.path)
     return userDocRef;
+}
+
+export async function getDepartmentUsersList(user){
+    let usersList = []
+    const therapistDepQ = query(therapistsCollection, where('Department', '==', user.department));
+    const therapistDepQuerySnapshot = await getDocs(therapistDepQ);
+    therapistDepQuerySnapshot.forEach((therapistDoc) => {
+        usersList.push({
+          value: therapistDoc.ref, //refrence to the therapists' document
+          label: therapistDoc.data().PersonalDetails["First Name"] + " " + therapistDoc.data().PersonalDetails["Last Name"]
+          + " " + therapistDoc.data().PersonalDetails["Id"]
+        })
+    })
+    const patientDepQ = query(patientsCollection, where('Department', '==', user.department));
+    const patientDepQuerySnapshot = await getDocs(patientDepQ);
+    patientDepQuerySnapshot.forEach((patientDoc) => {
+        usersList.push({
+        value: patientDoc.ref, //refrence to the patients' document
+        label: patientDoc.data().PersonalDetails["First Name"] + " " + patientDoc.data().PersonalDetails["Last Name"]
+        + " " + patientDoc.data().PersonalDetails["Id"]
+        })
+    })
 }
 
 export async function getDataFromUser(user) {

@@ -27,8 +27,10 @@ import Therapist from "../classes/Therapist"
 import Patient from "../classes/Patient"
 import Attendant from "../classes/Attendant"
 import { PersonalDetails } from '../classes/User';
+import { getDepPatients, getDepTherapists } from '../data/participants';
 
-
+const therapistsCollection = collection(db, 'Therapists');
+const patientsCollection = collection(db, 'Patients');
 const usersCollection = collection(db, 'Users');
 let coli = false
 
@@ -151,16 +153,40 @@ function Calendar() {
               setAppointments(d)
             })
             console.log(appointments)
+            const departmentTherapits = await getDepTherapists(userData.Department)
+            const departmentPatients = await getDepPatients(userData.Department)
+            console.log(departmentTherapits)
             const res = [
+              {
+                fieldName: 'type',
+                title: 'Type',
+                instances: [
+                            {
+                              text: 'Default',
+                              id: 1,
+                            },
+                            {
+                              text: 'Private',
+                              id: 2,
+                              color : "Chartreuse"
+                            },
+                          ],
+              },
               {
                 fieldName: 'roomId',
                 title: 'Room',
                 instances: rooms,
               },
               {
-                fieldName: 'participants',
-                title: 'Participants',
-                instances: participants,
+                fieldName: 'therapists',
+                title: 'Therapists',
+                instances: departmentTherapits,
+                allowMultiple: true,
+              },
+              {
+                fieldName: 'patients',
+                title: 'Patients',
+                instances: departmentPatients,
                 allowMultiple: true,
               },
             ];
