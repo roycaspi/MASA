@@ -13,7 +13,8 @@ export async function getDepTherapists(department){
         therapistsList.push({
             text: therapistDoc.data().PersonalDetails["First Name"] + " " + therapistDoc.data().PersonalDetails["Last Name"]
             + " " + therapistDoc.data().PersonalDetails["Id"],
-            id: therapistDoc.ref, //refrence to the therapists' document
+            id: therapistDoc.data().PersonalDetails["Id"],
+            ref: therapistDoc.ref, //refrence to the therapists' document
       })
     })
     return therapistsList
@@ -27,7 +28,8 @@ patientDepQuerySnapshot.forEach((patientDoc) => {
     patientsList.push({
         text: patientDoc.data().PersonalDetails["First Name"] + " " + patientDoc.data().PersonalDetails["Last Name"]
         + " " + patientDoc.data().PersonalDetails["Id"],
-        id: patientDoc.ref, //refrence to the patients' document
+        id: patientDoc.data().PersonalDetails["Id"],
+        ref: patientDoc.ref, //refrence to the patients' document
     })
 })
 return patientsList
