@@ -5,6 +5,7 @@ import {collection, getDocs, doc, updateDoc, arrayUnion, query, where, getDoc, i
 
 const therapistsCollection = collection(db, 'Therapists');
 const patientsCollection = collection(db, 'Patients');
+const roomsCollection = collection(db, 'Rooms');
 let coli = false
 
 /*
@@ -38,6 +39,59 @@ export async function getDepartmentUsersList(user){
         })
     })
 }
+export async function getDepTherapists(department){
+    let therapistsList = []
+    const therapistDepQ = query(therapistsCollection, where('Department', '==', department));
+    const therapistDepQuerySnapshot = await getDocs(therapistDepQ);
+    therapistDepQuerySnapshot.forEach((therapistDoc) => {
+        therapistsList.push({
+            text: therapistDoc.data().PersonalDetails["First Name"] + " " + therapistDoc.data().PersonalDetails["Last Name"]
+            + " " + therapistDoc.data().PersonalDetails["Id"],
+            id: therapistDoc.data().PersonalDetails["Id"],
+            ref: therapistDoc.ref, //refrence to the therapists' document
+      })
+    })
+    return therapistsList
+  }
+
+export async function getDepPatients(department){
+let patientsList = []
+const patientDepQ = query(patientsCollection, where('Department', '==', department));
+const patientDepQuerySnapshot = await getDocs(patientDepQ);
+patientDepQuerySnapshot.forEach((patientDoc) => {
+    patientsList.push({
+        text: patientDoc.data().PersonalDetails["First Name"] + " " + patientDoc.data().PersonalDetails["Last Name"]
+        + " " + patientDoc.data().PersonalDetails["Id"],
+        id: patientDoc.data().PersonalDetails["Id"],
+        ref: patientDoc.ref, //refrence to the patients' document
+    })
+})
+return patientsList
+}
+
+export async function getRooms() { //returns relavant rooms
+    let rooms = []
+    const roomsQuerySnapshot = await getDocs(roomsCollection);
+    roomsQuerySnapshot.forEach((doc) => {
+        // let {"Start Date": existsStart, "End Date": existsEnd} = doc.data().Occupied;
+        // let {startDate: newStart, endDate: newEnd} = e.appointmentData;
+        // existsStart = existsStart.toDate()
+        // existsEnd = existsEnd.toDate()
+        rooms.push({
+            text: doc.data().Name,
+            id: doc.data().Id,
+            ref: doc.ref,
+            occupied: doc.data().Occupied,
+        })
+        // if(existsEnd <= newStart || existsStart >= newEnd) //checks if room is available
+        //     rooms.push({
+        //         text: doc.data().Name,
+        //         id: doc.data().Id,
+        //         ref: doc.ref,
+        //     })
+    })
+    return rooms
+} 
 
 export async function getDataFromUser(user) {
     // const q = query(usersCollection, where('user', '==', user.uid)); 
@@ -99,47 +153,49 @@ async function isCollision(toAdd) {
     return false;
 }
 
-export async function addEvent(added, user) {
-    added.startDate.setSeconds(0) //collisions accured because of seconds -> reset seconds to 0
-    added.endDate.setSeconds(0)
-    const adminDocRef = getUserDocRef(user.uid)
-    const IdCountRef = doc(db, "Appointments", "IDCount");
-    const docSnap = await getDoc(IdCountRef);
-    const id = docSnap.data().count
-    const toAdd = {
-        "Data": {   "Title": added.title,
-                    "Id": id,
-                    "Admin": adminDocRef,
-                    "Participants": added.participants? Array.from(added.participants, uid => getUserDocRef(uid))
-                     : [],
-                    "Room": added.roomId,
-                    "Start Date": added.startDate,
-                    "End Date": added.endDate }
+export async function addEvent(added) {
+    console.log("enter addEvent")
+    console.log("event = ", added)
+    // added.startDate.setSeconds(0) //collisions accured because of seconds -> reset seconds to 0
+    // added.endDate.setSeconds(0)
+    // const adminDocRef = getUserDocRef(user.uid)
+    // const IdCountRef = doc(db, "Appointments", "IDCount");
+    // const docSnap = await getDoc(IdCountRef);
+    // const id = docSnap.data().count
+    // const toAdd = {
+    //     "Data": {   "Title": added.title,
+    //                 "Id": id,
+    //                 "Admin": adminDocRef,
+    //                 "Participants": added.participants? Array.from(added.participants, uid => getUserDocRef(uid))
+    //                  : [],
+    //                 "Room": added.roomId,
+    //                 "Start Date": added.startDate,
+    //                 "End Date": added.endDate }
         
-    }
-    await updateDoc(IdCountRef, { //update id counter
-        count: increment(1)
-    });
-    // coli = await isCollision(toAdd)
-    if(!coli){ 
-        if(toAdd.startDate <= toAdd.endDate){
-            const appointmentDocRef = await addDoc(collection(db, "Appointments"), toAdd); //craete document for appointment
-            toAdd.participants.forEach(async p => {//add event to participants
-                // const q = query(eventsCollection, where('user', "==", p))
-                // const querySnapshot = await getDocs(q);
-                const userDocRef = doc(db, p);
-                await updateDoc(userDocRef, {
-                    "Data": arrayUnion(appointmentDocRef)
-                });
-            })
-        }
-        else{
-            throw("Times Error")
-        }
-    }
-    else{
-        throw("Event Collision")
-    }
+    // }
+    // await updateDoc(IdCountRef, { //update id counter
+    //     count: increment(1)
+    // });
+    // // coli = await isCollision(toAdd)
+    // if(!coli){ 
+    //     if(toAdd.startDate <= toAdd.endDate){
+    //         const appointmentDocRef = await addDoc(collection(db, "Appointments"), toAdd); //craete document for appointment
+    //         toAdd.participants.forEach(async p => {//add event to participants
+    //             // const q = query(eventsCollection, where('user', "==", p))
+    //             // const querySnapshot = await getDocs(q);
+    //             const userDocRef = doc(db, p);
+    //             await updateDoc(userDocRef, {
+    //                 "Data": arrayUnion(appointmentDocRef)
+    //             });
+    //         })
+    //     }
+    //     else{
+    //         throw("Times Error")
+    //     }
+    // }
+    // else{
+    //     throw("Event Collision")
+    // }
 }
 
 export async function editEvent(changed, user) {
