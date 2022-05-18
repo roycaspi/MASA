@@ -69,6 +69,7 @@ patientDepQuerySnapshot.forEach((patientDoc) => {
 return patientsList
 }
 
+
 export async function getRooms() { //returns relavant rooms
     let rooms = []
     const roomsQuerySnapshot = await getDocs(roomsCollection);
@@ -77,6 +78,7 @@ export async function getRooms() { //returns relavant rooms
         // let {startDate: newStart, endDate: newEnd} = e.appointmentData;
         // existsStart = existsStart.toDate()
         // existsEnd = existsEnd.toDate()
+        console.log(doc.ref)
         rooms.push({
             text: doc.data().Name,
             id: doc.data().Id,
