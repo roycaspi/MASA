@@ -134,12 +134,12 @@ function Calendar() {
           // valueExpr: 'ref',
           onValueChanged(args) {
             priavteApp = args.value === "Private"
-            if (!mainGroupItems.find(function(i) { return i.dataField === "tasks" }) && priavteApp) {
+            if (!mainGroupItems.find(function(i) { return i.dataField === "exercises" }) && priavteApp) {
               mainGroupItems.push({
                   colSpan: 2, 
-                  label: { text: "Tasks" }, //todo: maybe patients will hold array of past tasks
-                  editorType: "dxTagBox",
-                  dataField: "tasks",
+                  label: { text: "Exercises" }, //todo: if patient can book private appointment patients should hold array of past exercises to choose from
+                  editorType: "dxTagBox", // todo: therapists will have the entire exercises to choose from
+                  dataField: "exercises",
                   editorOptions: {
                     items: [],
                     acceptCustomValue: true,
