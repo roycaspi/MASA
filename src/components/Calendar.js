@@ -31,6 +31,7 @@ import { PersonalDetails } from '../classes/User';
 import Scheduler, { Editing, Resource } from 'devextreme-react/scheduler';
 import Query from 'devextreme/data/query';
 import notify from 'devextreme/ui/notify';
+import DataSource from 'devextreme/data/data_source';
 
 const therapistsCollection = collection(db, 'Therapists');
 const patientsCollection = collection(db, 'Patients');
@@ -109,6 +110,7 @@ function Calendar() {
         e.appointmentData.text : 
         'Create a new appointment');
     const form = e.form;
+    let priavteApp = false
     let mainGroupItems = form.itemOption('mainGroup').items;
     rooms.forEach((room) => { //checks what rooms are available
       let {"Start Date": existsStart, "End Date": existsEnd} = room.occupied;
@@ -120,7 +122,71 @@ function Calendar() {
         rooms.splice(index, 1)
       }
     })
-    console.log("available rooms", rooms)
+    if (!mainGroupItems.find(function(i) { return i.dataField === "type" })) {
+      mainGroupItems.push({
+        colSpan: 2, 
+        label: { text: "Type" },
+        editorType: "dxSelectBox",
+        dataField: "type",
+        editorOptions: {
+          items: ["Default", "Private"],
+          // displayExpr: 'text',
+          // valueExpr: 'ref',
+          onValueChanged(args) {
+            priavteApp = args.value === "Private"
+            if (!mainGroupItems.find(function(i) { return i.dataField === "tasks" }) && priavteApp) {
+              mainGroupItems.push({
+                  colSpan: 2, 
+                  label: { text: "Tasks" }, //todo: maybe patients will hold array of past tasks
+                  editorType: "dxTagBox",
+                  dataField: "tasks",
+                  editorOptions: {
+                    items: [],
+                    acceptCustomValue: true,
+                    multiline: true,
+                    showSelectionControls: true,
+                  }
+                });
+              form.itemOption('mainGroup', 'items', mainGroupItems);
+            }
+          }
+        }
+      });
+      form.itemOption('mainGroup', 'items', mainGroupItems);
+    }
+    if (!mainGroupItems.find(function(i) { return i.dataField === "patients" })) {
+      mainGroupItems.push({
+          // colSpan: 2, 
+          label: { text: "Patients" },
+          editorType: "dxTagBox",
+          dataField: "patients",
+          editorOptions: {
+            items: departmentPatients,
+            valueExpr: "id",//todo: check if not problamatic
+            displayExpr: "text",
+            multiline: true,
+            showSelectionControls: true,
+          }
+        });
+      form.itemOption('mainGroup', 'items', mainGroupItems);
+    }
+      if (!mainGroupItems.find(function(i) { return i.dataField === "therapists" })) {
+        mainGroupItems.push({
+            // colSpan: 2, 
+            label: { text: "Therapists" },
+            editorType: "dxTagBox",
+            dataField: "therapists",
+            editorOptions: {
+              items: departmentTherapits,
+              valueExpr: "id",//todo: check if not problamatic
+              displayExpr: "text",
+              multiline: true,
+              showSelectionControls: true,
+            }
+          });
+        form.itemOption('mainGroup', 'items', mainGroupItems);
+      }
+      console.log("available rooms", rooms)
     if (!mainGroupItems.find(function(i) { return i.dataField === "room" })) {
         mainGroupItems.push({
             colSpan: 2, 
@@ -132,23 +198,12 @@ function Calendar() {
               displayExpr: 'text',
               valueExpr: 'ref',
               onValueChanged(args) {
-                console.log(args)
+                console.log(args)//todo
               }
             }
           });
         form.itemOption('mainGroup', 'items', mainGroupItems);
     }
-
-    // let formItems = form.option("items"); 
-    // if (!formItems.find(function(i) { return i.dataField === "location" })) {
-    //     formItems.push({
-    //         colSpan: 2,
-    //         label: { text: "Location" },
-    //         editorType: "dxTextBox",
-    //         dataField: "location"
-    //     });
-    //     form.option("items", formItems);
-    // }
   }
 
   function onAppointmentFormOpeningPatient(e){
@@ -294,7 +349,7 @@ function Calendar() {
             onAppointmentAdded={addApp}
           >
         <Editing allowAdding={true} />
-        <Resource
+        {/* <Resource
           dataSource={departmentTherapits}
           allowMultiple={true}
           fieldExpr="therapists"
@@ -305,10 +360,11 @@ function Calendar() {
           dataSource={departmentPatients}
           allowMultiple={true}
           fieldExpr="patients"
-          label="Patients"
           valueExpr='ref' //todo: makes the multiple function faulty - maybe put it in onAppointmentFormOpening function as field
-        />
+          label="Patients"
+        /> */}
       </Scheduler>
+
         {/* <Scheduler
           dataSource={appointments}
           onAppointmentFormOpening={onAppointmentFormOpening}
