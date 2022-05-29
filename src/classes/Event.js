@@ -1,13 +1,17 @@
 import User from "./User";
 
 export class EventDetails {
-    constructor(type, participants, startTime, endTime, repeat, room){
+    constructor(id, title, type, admins, therapists, patients, startTime, endTime, repeat, room, exercises){
+        this.id = id
         this.type = type;
-        this.participants = participants;
+        this.admins = admins;
+        this.therapists = therapists;
+        this.patients = patients;
         this.startTime = startTime;
         this.endTime = endTime;
         this.repeat = repeat;
         this.room = room;
+        this.exercises = exercises;
         this.notifyList//=get all relevant users(patients, therapists, attendants, secratery)
     }
 
