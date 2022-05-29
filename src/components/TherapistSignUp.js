@@ -111,7 +111,7 @@ export default function Signup() {
               <RequiredSelect placeholder="Select..." SelectComponent={BaseSelect} 
               onChange={(e) => setDepartmentValue(e.value)} options={departments} required/>
             </Form.Group>
-            <Form.Group id="therapists">
+            <Form.Group id="speciality">
               <Form.Label>Speciality</Form.Label>
               <RequiredSelect placeholder="Select..." components={makeAnimated()} isMulti 
               SelectComponent={BaseSelect} onChange={(e) => {       
