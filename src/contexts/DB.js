@@ -1,12 +1,10 @@
-import React, { useContext, useState, useEffect } from "react"
-import { auth, db } from "../firebase"
-import {collection, getDocs, doc, updateDoc, arrayUnion, query, where, getDoc, increment, addDoc, deleteDoc, arrayRemove 
-         } from 'firebase/firestore'
-import fromAsync from 'array-from-async'
-import { ScaleTypeRange } from "devextreme-react/gantt";
+import { db } from "../firebase"
+import {collection, getDocs, doc, updateDoc, arrayUnion, query, where, getDoc, increment, addDoc, 
+    deleteDoc, arrayRemove } from 'firebase/firestore'
 
 const therapistsCollection = collection(db, 'Therapists');
 const patientsCollection = collection(db, 'Patients');
+const attendantsCollection = collection(db, 'Attendants');
 const roomsCollection = collection(db, 'Rooms');
 const appointmentsCollection = collection(db, 'Appointments');
 let coli
@@ -14,21 +12,23 @@ let coli
 /*
     participants in Appointments document are refrences to the relevant patient/therapis/attendant documents
 */
-export async function getUserDocRef(uid){
+export async function getUserDocRef(uid){ //returns the document ref using the uid
+    console.log("enter getUserDoc")
     const userDocPointerRef = doc(db, 'Users', uid)
     const userDocPointerSnapShot = await getDoc(userDocPointerRef);
     const userDocRef = doc(db, userDocPointerSnapShot.data().Pointer.path)
     return userDocRef;
 }
 
-export async function getAppointment(ref) {
+export async function getAppointment(ref) { // returns the appointment data of the current ref
     const appointmentDocRef = doc(db,  ref.path)
     const appointmentDocSnap = await getDoc(appointmentDocRef)
     return appointmentDocSnap.data()
 }
 
-export async function getDepartmentUsersList(user){
+export async function getDepartmentUsersList(user){ //returns all the users of the same department as the given user
     let usersList = []
+    //gets therapists
     const therapistDepQ = query(therapistsCollection, where('Department', '==', user.department));
     const therapistDepQuerySnapshot = await getDocs(therapistDepQ);
     therapistDepQuerySnapshot.forEach((therapistDoc) => {
@@ -38,6 +38,7 @@ export async function getDepartmentUsersList(user){
           + " " + therapistDoc.data().PersonalDetails["Id"]
         })
     })
+    //gets patients
     const patientDepQ = query(patientsCollection, where('Department', '==', user.department));
     const patientDepQuerySnapshot = await getDocs(patientDepQ);
     patientDepQuerySnapshot.forEach((patientDoc) => {
@@ -47,9 +48,19 @@ export async function getDepartmentUsersList(user){
         + " " + patientDoc.data().PersonalDetails["Id"]
         })
     })
+    //gets attendants
+    const attendantDepQ = query(attendantsCollection, where('Department', '==', user.department));
+    const attendantDepQuerySnapshot = await getDocs(attendantDepQ);
+    attendantDepQuerySnapshot.forEach((attendantDoc) => {
+        usersList.push({
+        value: attendantDoc.ref, //refrence to the patients' document
+        label: attendantDoc.data().PersonalDetails["First Name"] + " " + attendantDoc.data().PersonalDetails["Last Name"]
+        + " " + attendantDoc.data().PersonalDetails["Id"]
+        })
+    })
     return usersList
 }
-export async function getDepTherapists(department){
+export async function getDepTherapists(department){ //returns the departments' therapists
     let therapistsList = []
     const therapistDepQ = query(therapistsCollection, where('Department', '==', department));
     const therapistDepQuerySnapshot = await getDocs(therapistDepQ);
@@ -64,7 +75,7 @@ export async function getDepTherapists(department){
     return therapistsList
   }
 
-export async function getDepPatients(department){
+export async function getDepPatients(department){//returns the departments' patients
 let patientsList = []
 const patientDepQ = query(patientsCollection, where('Department', '==', department));
 const patientDepQuerySnapshot = await getDocs(patientDepQ);
@@ -79,22 +90,25 @@ patientDepQuerySnapshot.forEach((patientDoc) => {
 return patientsList
 }
 
-export async function getUserPatients(user){
-    // if(user.type === "Therapist"){
-    //     return []
-    // }
+export async function getUserPatients(user){ //returns the patients of a given user
+    console.log("enter getUserPatients")
+    if(user.Type === "Patient"){
+        return undefined //so that we can make a difference in the calendar file of what to display
+    }
     let patients = []
-    user.Patients.forEach(async p => {
-        const patientDocRef = doc(db, p.path)
-        const patientDocSnapShot = await getDoc(patientDocRef)
-        patients.push({
-            label: patientDocSnapShot.data().PersonalDetails["First Name"] + " " + patientDocSnapShot.data().PersonalDetails["Last Name"]
-            + " " + patientDocSnapShot.data().PersonalDetails["Id"],
-            id: patientDocSnapShot.data().PersonalDetails["Id"],
-            value: patientDocSnapShot.ref, //refrence to the patients' document
-            data: patientDocSnapShot.Data,
+    if(user.Patients){
+        user.Patients.forEach(async p => {
+            const patientDocRef = doc(db, p.value.path)
+            const patientDocSnapShot = await getDoc(patientDocRef)
+            patients.push({
+                label: patientDocSnapShot.data().PersonalDetails["First Name"] + " " + patientDocSnapShot.data().PersonalDetails["Last Name"]
+                + " " + patientDocSnapShot.data().PersonalDetails["Id"],
+                id: patientDocSnapShot.data().PersonalDetails["Id"],
+                value: patientDocSnapShot.ref, //refrence to the patients' document
+                data: patientDocSnapShot.Data,
+            })
         })
-    })
+    }
     console.log(patients)
     return patients
 }
@@ -106,7 +120,7 @@ export async function getUserTherapists(user){
 export async function getUserAttendants(user){
     
 }
-export async function getRooms() { //returns relavant rooms
+export async function getRooms() { //returns all rooms
     let rooms = []
     const roomsQuerySnapshot = await getDocs(roomsCollection);
     roomsQuerySnapshot.forEach((doc) => {
@@ -123,7 +137,7 @@ export async function getRooms() { //returns relavant rooms
     return rooms
 } 
 
-export async function getDataFromUser(user) {
+export async function getDataFromUser(user) { //returns all appointments of a given user
     const userDocPointerRef = doc(db, 'Users',  user.uid)
     const userDocPointerSnapShot = await getDoc(userDocPointerRef);
     const userDocRef = doc(db, userDocPointerSnapShot.data().Pointer.path)
@@ -140,9 +154,7 @@ export async function getDataFromUser(user) {
     return data;
 }
 
-export async function getDataFromRef(userRef) {
-    // const q = query(usersCollection, where('user', '==', user.uid)); 
-    // const querySnapshot = await getDocs(q);
+export async function getDataFromRef(userRef) { //returns all appointments of a given user ref
     const userDocRef = doc(db, userRef.path)
     const userDocSnapShot = await getDoc(userDocRef)
     let data = []
@@ -158,7 +170,7 @@ export async function getDataFromRef(userRef) {
     return data;
 }
 
-async function isCollision(toAdd) { //todo: check if fixed correctly
+async function isCollision(toAdd) { //checks if the appointment to add colides with any existing appointments
     let temp = false;
     const participants = (toAdd.therapists)? toAdd.patients.concat(toAdd.therapists) : toAdd.patients
     for(const p of participants) { // check for events collisions for all paricipants
@@ -174,16 +186,13 @@ async function isCollision(toAdd) { //todo: check if fixed correctly
             existsEnd = existsEnd.toDate()
             console.log(existsStart, existsEnd, newStart, newEnd)
             if(appointment.id != toAdd.id){
-                // console.log("checks if collision=", !(existsEnd <= newStart || existsStart >= newEnd))
                 temp = (temp)? true: !(existsEnd <= newStart || existsStart >= newEnd)
             }
             if(temp){
-                // console.log("returns true")
                 return true;
             }
         }
     }
-    // console.log("not returned properably")
     console.log(temp)
     return temp;
 }
@@ -201,18 +210,7 @@ export async function addEvent(added, currentUser) {
         const id = docSnap.data().count
         added.appointmentData.id = id;
         added.appointmentData.admin = [await getUserDocRef(currentUser.uid)]
-        added.appointmentData.color = "#ff00aa"
         console.log(added)
-        // const toAdd = {
-        //     "Data": {   "Title": added.title,
-        //                 "Id": id,
-        //                 "Admin": adminDocRef,
-        //                 "Participants": added.participants? Array.from(added.participants, uid => getUserDocRef(uid))
-        //                  : [],
-        //                 "Room": added.roomId,
-        //                 "Start Date": added.startDate,
-        //                 "End Date": added.endDate }
-        // }
         await updateDoc(IdCountRef, { //update id counter
             count: increment(1)
         });
@@ -316,48 +314,7 @@ export async function editEvent(changed, user) {
             }
         })
     }
-    // try{
-    //     let changedDetails = changed.appointmentData
-    //     // let participantEvents = await getDataFromUser(user)
-    //     // let originalEventToChange = participantEvents.filter(appointment => appointment.id == Object.keys(changed)[0])
-    //     // let toChange = { //todo: fix
-    //     //   "Title": changedDetails.title? changedDetails.title: originalEventToChange[0].title,
-    //     //   "Id": originalEventToChange[0].id,
-    //     //   "Participants": changedDetails.participants? Array.from(new Set(changedDetails.participants.split(','))) : originalEventToChange[0].participants,
-    //     //   "Start Date": changedDetails.startDate? changedDetails.startDate: originalEventToChange[0].startDate.toDate(),
-    //     //   "End Date": changedDetails.endDate? changedDetails.endDate: originalEventToChange[0].endDate.toDate()
-    //     // }
-    //     //check for collision
-    //     coli = await isCollision(changedDetails)
-    //     if(coli){ 
-    //       throw("Event Collision")
-    //     }
-    //     else{
-    //         changed[appointment.id] ? { ...appointment, ...changed[appointment.id] } : appointment));
-    //         await updateDoc(partiDocRef, {
-    //             data: participantEvents.map(appointment => (
-    //             (appointment.id == toChange.id)? toChange : appointment))
-    //         });
-    //       })
-    //       if(changedDetails.participants){ //the participants field changed
-    //         changed[Object.keys(changed)[0]].participants = Array.from(new Set(changedDetails.participants.split(',')))
-    //         changedDetails = changed[Object.keys(changed)[0]]
-    //         eventParticipants.forEach(async p => { //delete from participants that got deleted
-    //           if(!changedDetails.participants.includes(p)){
-    //             // const q = query(eventsCollection, where('user', "==", p))
-    //             // const querySnapshot = await getDocs(q);
-    //             const partiDocRef = doc(db, p)
-    //             let participantEvents = getDataFromRef(p);
-    //             updateDoc(partiDocRef, {
-    //               data: participantEvents.filter(appointment => appointment.id != Object.keys(changed)[0]) });
-    //           }
-    //         })
-    //       }
-    //     }
-    //   }
-    //   catch(e){
-    //     throw(e)
-    //   }
+    return true;
 }
 export async function removeEvent(deleted, user) {
     const userDocPointerRef = doc(db, 'Users',  user.uid)

@@ -2,19 +2,12 @@ import React from 'react';
 
 class ResourceCell extends React.PureComponent {
   render() {
-    const { data: { color, text, data: { avatar, age, discipline } } } = this.props;
+    const { data: { firstName, lastName, data: { } } } = this.props;
     return (
       <div className="dx-template-wrapper">
-        <div className="name" style={{ background: color }}>
-          <h2>{text}</h2>
-        </div>
-        <div className="avatar">
-          <img src={avatar} />
-        </div>
-        <div className="info" style={{ color }}>
-          Age: {age}
-          <br />
-          <b>{discipline}</b>
+        <div className="name" style={{ background: 'green' }}>
+          <h2>{this.props}</h2>
+          {console.log(this.props)}
         </div>
       </div>
     );
