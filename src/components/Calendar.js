@@ -1,63 +1,44 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Paper from '@mui/material/Paper';
-import { Alert, Container, Form } from "react-bootstrap"
-import { ViewState,
-  EditingState,
-  IntegratedEditing } from '@devexpress/dx-react-scheduler';
-import {
-  DayView,
-  Resources,
-  Appointments,
-  AppointmentForm,
-  AppointmentTooltip,
-  ConfirmationDialog,
-  WeekView,
-  Toolbar,
-  ViewSwitcher,
-  CurrentTimeIndicator,
-} from '@devexpress/dx-react-scheduler-material-ui';
+import { Container, Form } from "react-bootstrap"
 import {db} from '../firebase'
-import {collection, getDocs, doc, updateDoc, arrayUnion, 
-  query, where, getDoc, increment } from 'firebase/firestore'
+import {doc, getDoc } from 'firebase/firestore'
 import { useAuth } from "../contexts/AuthContext"
-// import { participants, rooms } from './eventFields';
 import { getDataFromUser, addEvent, editEvent, removeEvent, getDepPatients, 
-  getDepTherapists, getRooms, getUserPatients, getDataFromRef } from "../contexts/DB"
+  getDepTherapists, getRooms, getUserPatients, getDataFromRef, getUserDocRef } from "../contexts/DB"
 import Therapist from "../classes/Therapist"
 import Patient from "../classes/Patient"
 import Attendant from "../classes/Attendant"
 import { PersonalDetails } from '../classes/User';
-// import { getDepPatients, getDepTherapists } from '../data/participants';
-import Scheduler, { Editing, Resource, View } from 'devextreme-react/scheduler';
-import Query from 'devextreme/data/query';
+import Scheduler, { Editing, Resource } from 'devextreme-react/scheduler';
 import notify from 'devextreme/ui/notify';
-import { Button } from 'bootstrap';
 import Grid from '@material-ui/core/Grid';
 import Select from 'react-select'
-import TextField from '@mui/material/TextField';
-import { Label } from 'devextreme-react/bar-gauge';
-import ResourceCell from './ResourceCell.js';
+import Popup from 'react-popup';
 
-const therapistsCollection = collection(db, 'Therapists');
-const patientsCollection = collection(db, 'Patients');
-const usersCollection = collection(db, 'Users');
-let coli = false
+
 let showSecondScheduler = false
+const types = [{id: 1,
+                text: "Default"}, 
+                {id: 2,
+                  text: "Private",
+                  color: '#008000'}]
+
 
 
 function Calendar() {
     const { currentUser } = useAuth()
-    const [error, setError] = useState("")
     const [appointments, setAppointments] = useState([]);
     const [isTherapist, setIsTherapist] = useState(false)
     const [user, setUser] = useState(null)
     const [departmentTherapits, setDepartmentTherapits] = useState([])
     const [departmentPatients, setDepartmentPatients] = useState([])
     const [rooms, setRooms] = useState([])
-    const [patientToView, setPatientToView] = useState(false)
-    const [therapistsPatients, setTherapistsPatients] = useState([])
+    const [patientDataToView, setPatientDataToView] = useState(false)
+    const [patientToView, setPatientToView] = useState(undefined)
+    const [userPatients, setUserPatients] = useState(undefined)
     const [userName, setUserName] = useState("")
-    const groups = ['type'];
+
 
   async function addApp(e){
     console.log("enter addApp")
@@ -66,7 +47,6 @@ function Calendar() {
       }
       else{
         showCollisionToast(e)
-        setError(e)
       }
   }
 
@@ -77,18 +57,20 @@ function Calendar() {
     }
     else{
       showCollisionToast(e)
-      setError(e)
     }
   }
 
   async function deleteApp(e){
     console.log("enter deleteApp")
+    if(user.permission < 2) {
+      return;
+    }
     removeEvent(e, currentUser)
     showDeletedToast(e)
   }
   
   function showToast(event, value, type) {
-    notify(`${event} "${value}" task`, type, 800);
+    notify(`${event} "${value}" task`, type, 10000);
   }
 
   function showAddedToast(e) {
@@ -118,34 +100,27 @@ function Calendar() {
       console.log(room)
     })
     availableRooms.forEach((room) => { //checks what rooms are available
-      room.occupied.forEach((t) => {
-        let {startDate: existsStart, endDate: existsEnd} = t;
-        let {startDate: newStart, endDate: newEnd} = e.appointmentData;
-        existsStart = new Date(existsStart.seconds * 1000)
-        existsEnd = new Date(existsEnd.seconds * 1000)
-        if(!(existsEnd <= newStart || existsStart >= newEnd)){
-          room.disabled = true
-        }
-      })
+      console.log(room.occupied)
+      if(room.occupied){
+        room.occupied.forEach((t) => {
+          let {startDate: existsStart, endDate: existsEnd} = t;
+          let {startDate: newStart, endDate: newEnd} = e.appointmentData;
+          existsStart = new Date(existsStart.seconds * 1000)
+          existsEnd = new Date(existsEnd.seconds * 1000)
+          if(!(existsEnd <= newStart || existsStart >= newEnd)){
+            room.disabled = true
+          }
+        })
+      }
     })
     return availableRooms
   }
   
-  async function getViews(e) { //gets the patients of the current therapist
+  async function getViews(e) { //gets the patients' data to view
     if(showSecondScheduler){
       const data = await getDataFromRef(e.value)
-      setPatientToView(data)
+      setPatientDataToView(data)
     }
-  }
-
-  async function getUserName(){
-    // const userPointerDocRef = doc(db, 'Users', currentUser.uid);
-    // const userPointerDocSnap = await getDoc(userPointerDocRef);
-    // const userDocRef = doc(db, userPointerDocSnap.data().Pointer.path)
-    // const userDocSnapShot = await getDoc(userDocRef)
-    // const userData = userDocSnapShot.data()
-    // setUserName(userData.PersonalDetails["First Name"] + " " + userData.PersonalDetails["Last Name"]
-    // + " " + userData.PersonalDetails["Id"])
   }
 
   function onAppointmentFormOpeningTherapist(e){
@@ -154,32 +129,36 @@ function Calendar() {
         e.appointmentData.text : 
         'Create a new appointment');
     const form = e.form;
-    let privateApp = false
+    let privateApp = (e.appointmentData.type == "Private")
     let availableRooms = getAvailableRooms(e)
     let mainGroupItems = form.itemOption('mainGroup').items;
     console.log("rooms=", rooms)
     console.log("availableRooms=", availableRooms)
+    console.log(mainGroupItems)
+    const index = mainGroupItems.indexOf(mainGroupItems.find(field => field.dataField === "type" ))
+    mainGroupItems.splice(index, 1) //remove old field
     if (!mainGroupItems.find(function(i) { return i.dataField === "type" })) {
-      mainGroupItems.push({
+      mainGroupItems.splice(index, 1, {
         colSpan: 2, 
         label: { text: "Type" },
         editorType: "dxSelectBox",
         dataField: "type",
         editorOptions: {
-          items: ["Default", "Private"],
-          // displayExpr: 'text',
-          // valueExpr: 'ref',
+          items: types,
+          displayExpr: 'text',
+          valueExpr: 'text',
           onValueChanged(args) {
-            privateApp = args.value === "Private"
+            privateApp = (args.value === "Private")
             if(!privateApp){
               mainGroupItems.find(function(i) { if(i.dataField === "exercises"){mainGroupItems.splice(
                 mainGroupItems.indexOf(i), 1)} }) //removes exercises field if default type is selected
             }
+            console.log(privateApp)
             if (!mainGroupItems.find(function(i) { return i.dataField === "exercises" }) && privateApp) { //create the exercises field if private type is selected
               mainGroupItems.push({
                   colSpan: 2, 
-                  label: { text: "Exercises" }, //todo: if patient can book private appointment patients should hold array of past exercises to choose from
-                  editorType: "dxTagBox", // todo: therapists will have the entire exercises to choose from
+                  label: { text: "Exercises" }, 
+                  editorType: "dxTagBox", 
                   dataField: "exercises",
                   editorOptions: {
                     items: [],
@@ -211,22 +190,22 @@ function Calendar() {
         });
       form.itemOption('mainGroup', 'items', mainGroupItems);
     }
-      if (!mainGroupItems.find(function(i) { return i.dataField === "therapists" })) {
-        mainGroupItems.push({
-            label: { text: "Therapists" },
-            editorType: "dxTagBox",
-            dataField: "therapists",
-            searchEnabled: true,
-            editorOptions: {
-              items: departmentTherapits,
-              valueExpr: "ref.path",
-              displayExpr: "text",
-              multiline: true,
-              showSelectionControls: true,
-            }
-          });
-        form.itemOption('mainGroup', 'items', mainGroupItems);
-      }
+    if (!mainGroupItems.find(function(i) { return i.dataField === "therapists" })) {
+      mainGroupItems.push({
+          label: { text: "Therapists" },
+          editorType: "dxTagBox",
+          dataField: "therapists",
+          searchEnabled: true,
+          editorOptions: {
+            items: departmentTherapits,
+            valueExpr: "ref.path",
+            displayExpr: "text",
+            multiline: true,
+            showSelectionControls: true,
+          }
+        });
+      form.itemOption('mainGroup', 'items', mainGroupItems);
+    }
     console.log("available rooms", availableRooms)
     if (!mainGroupItems.find(function(i) { return i.dataField === "room" })) {
         mainGroupItems.push({
@@ -244,10 +223,10 @@ function Calendar() {
           });
         form.itemOption('mainGroup', 'items', mainGroupItems);
     }
-    else if (!mainGroupItems.find(function(i) { return i.dataField === "room" })) {  //updates the available rooms
+    else if (mainGroupItems.find(function(i) { return i.dataField === "room" })) {  //updates the available rooms
       availableRooms = getAvailableRooms(e)
       console.log("updating rooms to", availableRooms)
-      const index = availableRooms.indexOf(mainGroupItems.find(field => field.dataField === "room" ))
+      const index = mainGroupItems.indexOf(mainGroupItems.find(field => field.dataField === "room" ))
       mainGroupItems.splice(index, 1)
       mainGroupItems.push({
         colSpan: 2, 
@@ -279,20 +258,136 @@ function Calendar() {
         });
         form.itemOption('mainGroup', 'items', mainGroupItems);
     }
-    setAppointments(async e => await getDataFromUser(user))
   }
 
-  function onAppointmentFormOpeningPatient(e){
-
+  async function onAppointmentFormOpeningPatient(e){
+    e.popup.option('showTitle', true);
+    e.popup.option('title', e.appointmentData.text ? 
+    e.appointmentData.text : 
+    'Create a new private appointment');
+    const form = e.form;
+    let availableRooms = getAvailableRooms(e)
+    let mainGroupItems = []
+    mainGroupItems = form.itemOption('mainGroup').items;
+    mainGroupItems.splice(2, 1) //remove the all day and repeat buttons
+    console.log("rooms=", rooms)
+    console.log("availableRooms=", availableRooms)
+    if (!mainGroupItems.find(function(i) { return i.dataField === "type" })) {
+      mainGroupItems.push({
+        visible: false,
+        dataField: "type",
+        editorOptions: {
+          value: "Private",
+        }
+      });
+      form.itemOption('mainGroup', 'items', mainGroupItems);
+    }
+    console.log("available rooms", availableRooms)
+    if (!mainGroupItems.find(function(i) { return i.dataField === "room" })) {
+      mainGroupItems.push({
+          colSpan: 2, 
+          label: { text: "Room" },
+          editorType: "dxTagBox",
+          dataField: "room",
+          editorOptions: {
+            items: availableRooms, 
+            valueExpr: "ref.path",
+            displayExpr: "text",
+            multiline: true,
+            showSelectionControls: true,
+          },
+        });
+      form.itemOption('mainGroup', 'items', mainGroupItems);
   }
+  else if (mainGroupItems.find(function(i) { return i.dataField === "room" })) {  //updates the available rooms
+    availableRooms = getAvailableRooms(e)
+    console.log("updating rooms to", availableRooms)
+    const index = availableRooms.indexOf(mainGroupItems.find(field => field.dataField === "room" ))
+    mainGroupItems.splice(index, 1)
+    mainGroupItems.push({
+      colSpan: 2, 
+      label: { text: "Room" },
+      editorType: "dxTagBox",
+      dataField: "room",
+      editorOptions: {
+        items: availableRooms, 
+        valueExpr: "ref.path",
+        displayExpr: "text",
+        multiline: true,
+        showSelectionControls: true,
+      },
+    });
+    form.itemOption('mainGroup', 'items', mainGroupItems);
+  }
+  if (!mainGroupItems.find(function(i) { return i.dataField === "therapists" })) {
+    mainGroupItems.push({
+        label: { text: "Therapists" },
+        editorType: "dxTagBox",
+        dataField: "therapists",
+        searchEnabled: true,
+        editorOptions: {
+          items: departmentTherapits,
+          valueExpr: "ref.path",
+          displayExpr: "text",
+          multiline: true,
+          showSelectionControls: true,
+        }
+      });
+    form.itemOption('mainGroup', 'items', mainGroupItems);
+  }
+  if (!mainGroupItems.find(function(i) { return i.dataField === "patients" })) { //unvisible to user
+    console.log(user)
+    mainGroupItems.push({
+        visible: false,
+        dataField: "patients",
+        editorOptions: {
+          value: (user.type === "Patient")? 
+          [{ 
+            text: user.personalDetails["First Name"] + " " + user.personalDetails["Last Name"]
+            + " " + user.personalDetails["Id"],
+            id: user.personalDetails["Id"],
+            ref: await getUserDocRef(user.uid).path, //refrence to the patients' document
+          }] : [patientToView.value.path]
+        }
+      });
+    form.itemOption('mainGroup', 'items', mainGroupItems);
+  }
+  if (!mainGroupItems.find(function(i) { return i.dataField === "exercises" })) { //create the exercises field if private type is selected
+    mainGroupItems.push({
+        colSpan: 2, 
+        label: { text: "Exercises" }, 
+        editorType: "dxTagBox", 
+        dataField: "exercises",
+        editorOptions: {
+          items: [],
+          acceptCustomValue: true,
+          multiline: true,
+          showSelectionControls: true,
+        }
+    });
+    form.itemOption('mainGroup', 'items', mainGroupItems);
+  }
+  if(user.permission < 2){ //if permission not high enough - editing disabled
+    mainGroupItems.forEach(e => {e.editorOptions? e.editorOptions.readOnly = true :
+       e.editorOptions = { readOnly: true}; e.items != undefined?  e.items.forEach(v => {
+         v.editorOptions? v.editorOptions.readOnly = true: v.editorOptions = null}): e.items = null;})
+    form.itemOption('mainGroup', 'items', mainGroupItems);
+  }
+  else {
+    mainGroupItems.forEach(e => {e.editorOptions? e.editorOptions.readOnly = false :
+      e.editorOptions = { readOnly: false} })
+   form.itemOption('mainGroup', 'items', mainGroupItems);
+  }
+  console.log(mainGroupItems)
+}
+  
 
   function onAppointmentFormOpening(e) {
     if(isTherapist){
-      console.log(user)
       onAppointmentFormOpeningTherapist(e)
     }
     else{
-      onAppointmentFormOpeningPatient(e)
+        onAppointmentFormOpeningPatient(e)
     }
   }
 
@@ -304,13 +399,39 @@ function Calendar() {
     const userData = userDocSnapShot.data()
     setUserName(userData.PersonalDetails["First Name"] + " " + userData.PersonalDetails["Last Name"]
     + " " + userData.PersonalDetails["Id"])
+    if(user == undefined){
+      await getUser()
+    }
+    if(userPatients == undefined && user.type != "Patient"){
+      setUserPatients(await getUserPatients(userData))
+    }
   })
-//   useEffect(async () => { 
-//     setRooms(await getRooms())
-// }, [rooms])
-//   useEffect(async () => { 
-//     showErrorToast(error)
-// }, [error])
+
+  async function getUser(){
+    const userPointerDocRef = doc(db, 'Users', currentUser.uid);
+    const userPointerDocSnap = await getDoc(userPointerDocRef);
+    const userDocRef = doc(db, userPointerDocSnap.data().Pointer.path)
+    const userDocSnapShot = await getDoc(userDocRef)
+    const userData = userDocSnapShot.data()
+    if(userData.Type === "Therapist"){
+      setIsTherapist(true)
+      setUser(new Therapist(new PersonalDetails(userData.PersonalDetails["First Name"], userData.PersonalDetails["Last Name"],
+      userData.PersonalDetails["Id"], userData.PersonalDetails["Email"], userData.PersonalDetails["Phone Number"],
+      userData.PersonalDetails["Date of Birth"]), userData.Department, userData.Speciality, undefined, userData.Patients,
+      userData.uid))
+    }
+    else if(userData.Type === "Patient"){
+      setUser(new Patient(new PersonalDetails(userData.PersonalDetails["First Name"], userData.PersonalDetails["Last Name"],
+      userData.PersonalDetails["Id"], userData.PersonalDetails["Email"], userData.PersonalDetails["Phone Number"],
+      userData.PersonalDetails["Date of Birth"]), userData.Department, userData.Therapists, userData.Permission,
+      userData.Attendants, undefined, userData.uid))
+    }
+    else if(userData.Type === "Attendant"){
+      setUser(new Attendant(new PersonalDetails(userData.PersonalDetails["First Name"], userData.PersonalDetails["Last Name"],
+      undefined, userData.PersonalDetails["Email"], userData.PersonalDetails["Phone Number"],
+      undefined), userData.Department, userData.Permission, userData.Patients, undefined, userData.uid))
+    }
+  }
 
   useEffect(async () => { 
       try {
@@ -318,61 +439,58 @@ function Calendar() {
           const userPointerDocSnap = await getDoc(userPointerDocRef);
           const userDocRef = doc(db, userPointerDocSnap.data().Pointer.path)
           const userDocSnapShot = await getDoc(userDocRef)
-          console.log(userDocSnapShot.data())
           const userData = userDocSnapShot.data()
-          if(userData.Type === "Therapist"){
-            setIsTherapist(true)
-            setTherapistsPatients(await getUserPatients(userData))
-            setUser(new Therapist(new PersonalDetails(userData.PersonalDetails["First Name"], userData.PersonalDetails["Last Name"],
-            userData.PersonalDetails["Id"], userData.PersonalDetails["Email"], userData.PersonalDetails["Phone Number"],
-            userData.PersonalDetails["Date of Birth"]), userData.Department, userData.Speciality, undefined, userData.Patients,
-            userData.uid))
-          }
-          else if(userData.Type === "Patient"){
-            setUser(new Patient(new PersonalDetails(userData.PersonalDetails["First Name"], userData.PersonalDetails["Last Name"],
-            userData.PersonalDetails["Id"], userData.PersonalDetails["Email"], userData.PersonalDetails["Phone Number"],
-            userData.PersonalDetails["Date of Birth"]), userData.Department, userData.Therapists, userData.Permission,
-            userData.Attendants, undefined, userData.uid))
-          }
-          else if(userData.Type === "Attendant"){
-            setUser(new Attendant(new PersonalDetails(userData.PersonalDetails["First Name"], userData.PersonalDetails["Last Name"],
-            undefined, userData.PersonalDetails["Email"], userData.PersonalDetails["Phone Number"],
-            undefined), userData.Department, userData.Permission, userData.Patients, undefined, userData.uid))
+          if(user == undefined){
+            await getUser()
           }
           setAppointments(await getDataFromUser(userData))
-          console.log(await getDataFromUser(userData))
           setDepartmentTherapits(await getDepTherapists(userData.Department))
           setDepartmentPatients(await getDepPatients(userData.Department))
           setRooms(await getRooms())
-          getUserName()
+          if(userPatients == undefined){
+            setUserPatients(await getUserPatients(userData))
+          }
+          console.log(userPatients)
       } catch(err) {
           console.log(err)
       }
     }, [])
 
     async function clicked(){ //function that happens once screen is clicked
-
+      console.log(user)
+      if(user == undefined){
+        await getUser()
+      }
+      const data = await getDataFromUser(user)
+      console.log("render appointments")
+      setAppointments(data)
+      console.log("render", user)
     }
-
+    
     if(isTherapist){
       return (
-        //div is for the clicked function
-        <div class="font-icon-wrapper" onClick={clicked}>
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6}>
             <Paper>
             <Form.Label className="btn btn-primary" style={{textAlign: "center", verticalAlign: "middle"}} disabled={true}>Welcome {userName}</Form.Label>
+            <Popup
+              className="mm-popup"
+              btnClass="mm-popup__btn"
+              closeBtn={true}
+              closeHtml={null}
+              defaultOk="Ok"
+              defaultCancel="Cancel"
+              wildClasses={false}
+              escToClose={true} />
             <Scheduler
-              resourceCellComponent={ResourceCell}
               dataSource={appointments}
-              groups={groups}
               defaultCurrentView="day"
               defaultCurrentDate={new Date()}
               height={'100%'}
               firstDayOfWeek={0}
               startDayHour={7}
               endDayHour={19}
-              showAllDayPanel={false}
+              showAllDayPanel={true}
               crossScrollingEnabled={true}
               adaptivityEnabled={true}
               showCurrentTimeIndicator={true}
@@ -384,38 +502,13 @@ function Calendar() {
             >
             <Editing allowAdding={true} />
             <Resource
-            dataSource={departmentPatients}
-            fieldExpr="type2"
-            label="Type2"
-            /> 
-            <Resource
-            children
-            dataSource={departmentPatients}
-            fieldExpr="type2"
-            label="EX"
-            /> 
-            {/* <Resource
-            dataSource={["Default", "Private"]}
-            allowMultiple={true}
-            fieldExpr="type"
-            label="Type"
-            onValueChanged={}
-          /> */}
-          {/* <Resource
-            dataSource={[]}
-            allowMultiple={true}
-            fieldExpr="therapists"
-            label="Test"
-            onValueChanged={change}
-          />
-          <Resource
-            dataSource={departmentPatients}
-            allowMultiple={true}
-            fieldExpr="patients"
-            valueExpr='ref' //todo: makes the multiple function faulty - maybe put it in onAppointmentFormOpening function as field
-            label="Test2"
-            visible={true}
-          /> */}
+              dataSource={types}
+              allowMultiple={false}
+              fieldExpr="type"
+              valueExpr={"text"}
+              label="Type"
+              useColorAsDefault={true}
+            />
             </Scheduler>
           </Paper>
         </Grid>
@@ -423,7 +516,7 @@ function Calendar() {
           <Paper>
             <Container>
               <Select placeholder="Choose Patient to View" 
-                options={[{label: "None", value: "None"}].concat(therapistsPatients)}
+                options={userPatients}
                 menuPortalTarget={document.body} 
                 styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
                 onChange={(e) => {showSecondScheduler=(e.value === "None")? false:true; getViews(e)}}/>
@@ -431,14 +524,14 @@ function Calendar() {
             <Container>
               <Scheduler
                 visible={showSecondScheduler}
-                dataSource={patientToView}
+                dataSource={patientDataToView}
                 defaultCurrentView="day"
                 defaultCurrentDate={new Date()}
                 height={'100%'}
                 firstDayOfWeek={0}
                 startDayHour={7}
                 endDayHour={19}
-                showAllDayPanel={false}
+                showAllDayPanel={true}
                 crossScrollingEnabled={true}
                 adaptivityEnabled={true}
                 showCurrentTimeIndicator={true}
@@ -449,21 +542,40 @@ function Calendar() {
                 onAppointmentDeleted={deleteApp}
                 >
                 <Editing allowAdding={true} />
+                <Resource
+                  dataSource={types}
+                  allowMultiple={false}
+                  fieldExpr="type"
+                  valueExpr={"text"}
+                  label="Type"
+                  useColorAsDefault={true}
+                />
               </Scheduler>
             </Container>
-            {/* {setAppointments(async e => await getDataFromUser(user))} */}
             </Paper>
           </Grid>
         </Grid>
-        </div>
       );
     }
     else{
+      console.log(userPatients)
       return(
+        //use the clicked function only when attendant is logged in
+        <div class="font-icon-wrapper" onClick={(userPatients == undefined)?null:clicked}>
         <Paper>
+            <Container>
+              {(userPatients != undefined)? (<Select placeholder="Choose Patient to View" // if user == attendant show select button if user == patient show name 
+                  options={userPatients}
+                  menuPortalTarget={document.body} 
+                  styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+                  onChange={(e) => {showSecondScheduler=true; setPatientToView(e); getViews(e)}}/>) :
+                (<Form.Label className="btn btn-primary" style={{textAlign: "center", verticalAlign: "middle"}} 
+                disabled={true}>Welcome {userName}</Form.Label>)
+                }
+            </Container>
             <Scheduler
-              dataSource={appointments}
-              groups={groups}
+              visible={(userPatients == undefined) || showSecondScheduler}
+              dataSource={(patientDataToView != false)? patientDataToView:appointments}
               defaultCurrentView="day"
               defaultCurrentDate={new Date()}
               height={'100%'}
@@ -481,9 +593,17 @@ function Calendar() {
               onAppointmentDeleted={deleteApp}
             >
             <Editing allowAdding={true} />
+            <Resource
+              dataSource={types}
+              allowMultiple={false}
+              fieldExpr="type"
+              valueExpr={"text"}
+              label="Type"
+              useColorAsDefault={true}
+            />
             </Scheduler>
-            {/* {setAppointments(async e => await getDataFromUser(user))} */}
           </Paper>
+          </div>
       );
     }
 }

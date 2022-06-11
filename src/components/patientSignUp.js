@@ -61,18 +61,18 @@ export default function Signup() {
       })
     })
     setPhysiotherapistsList(therapistsList)
+    therapistsList = []
     const occTherapyQ = query(therapistsCollection, where('Speciality', 'array-contains-any', ['Occupational Therapy']),
     where('Department', '==', department));
     const occQuerySnapshot = await getDocs(occTherapyQ);
     occQuerySnapshot.forEach((therapistDoc) => {
-      if(!therapistDoc.ref in therapistsList){ //makes sure a therapist apears only once in the list
-        therapistsList.push({
-          value: therapistDoc.ref, //refrence to the therapists' document
-          label: therapistDoc.data().PersonalDetails["First Name"] + " " + therapistDoc.data().PersonalDetails["Last Name"] 
-          + " " + therapistDoc.data().PersonalDetails["Id"]
-        })
-      }
+      therapistsList.push({
+        value: therapistDoc.ref, //refrence to the therapists' document
+        label: therapistDoc.data().PersonalDetails["First Name"] + " " + therapistDoc.data().PersonalDetails["Last Name"] 
+        + " " + therapistDoc.data().PersonalDetails["Id"]
+      })
     })
+    console.log(therapistsList)
     setOccupationalTherapistsList(therapistsList)
   }
 
