@@ -98,7 +98,7 @@ export default function Signup() {
           <h2 className="text-center mb-4">Sign Up</h2>
           {error && <Alert variant="danger">{error}</Alert>}
           <Form onSubmit={handleSubmit}>
-            <ButtonGroup style={{width: "100%"}}>
+            <ButtonGroup className="d-flex align-items-center justify-content-center" style={{width: "100%"}}>
               <Link to="/patientSignup" className="btn btn-primary" style={{align: "center"}}>Patient</Link>
               <Link to="/therapistSignup" className="btn btn-primary" style={{align: "center"}}>Therapist</Link>
               <Link to="/attendantSignup" className="btn btn-primary" style={{align: "center"}}>Attendant</Link>

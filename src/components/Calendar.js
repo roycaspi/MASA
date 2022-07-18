@@ -302,7 +302,7 @@ function Calendar() {
   else if (mainGroupItems.find(function(i) { return i.dataField === "room" })) {  //updates the available rooms
     availableRooms = getAvailableRooms(e)
     console.log("updating rooms to", availableRooms)
-    const index = availableRooms.indexOf(mainGroupItems.find(field => field.dataField === "room" ))
+    const index = mainGroupItems.indexOf(mainGroupItems.find(field => field.dataField === "room" ))
     mainGroupItems.splice(index, 1)
     mainGroupItems.push({
       colSpan: 2, 
@@ -486,7 +486,7 @@ function Calendar() {
               dataSource={appointments}
               defaultCurrentView="day"
               defaultCurrentDate={new Date()}
-              height={'100%'}
+              height={"100%"}
               firstDayOfWeek={0}
               startDayHour={7}
               endDayHour={19}
