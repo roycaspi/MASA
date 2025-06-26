@@ -21,13 +21,13 @@ class FixRequiredSelect extends React.Component {
   };
 
   getValue = () => {
-    if (this.props.value != undefined) return this.props.value;
+    if (this.props.value !== undefined) return this.props.value;
     return this.state.value || "";
   };
 
   render() {
     const { SelectComponent, required, ...props } = this.props;
-    const { isLoading, isDisabled } = this.props;
+    const { isDisabled } = this.props;
     const enableRequired = !isDisabled;
 
     return (

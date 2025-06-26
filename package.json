@@ -19,6 +19,7 @@
     "devextreme": "21.2.7",
     "devextreme-react": "21.2.7",
     "firebase": "^9.6.7",
+    "firebase-admin": "^13.0.1",
     "firebase-firestore-lite": "^1.0.3",
     "lodash": "^4.17.21",
     "prop-types": "^15.8.1",
@@ -62,6 +63,8 @@
   },
   "devDependencies": {
     "@types/node": "^17.0.29",
-    "devextreme-themebuilder": "^21.2.4"
+    "devextreme-themebuilder": "^21.2.4",
+    "inferno": "^7.4.11",
+    "postcss-custom-properties": "^14.0.6"
   }
 }

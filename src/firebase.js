@@ -1,18 +1,25 @@
+// Add this comment at the top of the file to help with development
+// For Google Authentication to work properly in development:
+// 1. Make sure localhost is added to authorized domains in Firebase Console
+// 2. Enable Google sign-in provider in Firebase Console
+// 3. If popup issues persist, use the redirect method
 import {initializeApp} from 'firebase/app'
 import {getAuth} from 'firebase/auth'
 import {getFirestore} from 'firebase/firestore'
+import { getMessaging } from 'firebase/messaging'
 
+const firebaseConfig = {
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+};
 
-const firebaseApp = initializeApp({
-  apiKey: "AIzaSyATsBHzexgK5nc9hK3RHp_Y9YQj93AsF9M",
-  authDomain: "masa-828f9.firebaseapp.com",
-  projectId: "masa-828f9",
-  storageBucket: "masa-828f9.appspot.com",
-  messagingSenderId: "233217016333",
-  appId: "1:233217016333:web:b42feab0b4dc8c8cf7cb44",
-  measurementId: "G-6WHPMMDBRK"
-});
-export const db = getFirestore(firebaseApp)
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app)
 
-export const auth = getAuth(firebaseApp)
-export default firebaseApp
+export const auth = getAuth(app)
+export const messaging = getMessaging(app)
+export default app

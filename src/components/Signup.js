@@ -9,7 +9,7 @@ export default function Signup() {
   const emailRef = useRef()
   const passwordRef = useRef()
   const passwordConfirmRef = useRef()
-  const { signup } = useAuth()
+  const { signup, signInWithGoogle } = useAuth()
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const history = useHistory()
@@ -35,6 +35,26 @@ export default function Signup() {
       setError(e)
     }
   }
+
+  async function handleGoogleSignIn() {
+    setError("")
+    setLoading(true)
+    
+    try {
+      const result = await signInWithGoogle()
+      if (result.needsRegistration) {
+        // Redirect to complete registration with Google user data
+        history.push("/complete-registration", { googleUser: result.user })
+      } else {
+        // User exists, redirect to home
+        history.push("/")
+      }
+    } catch (error) {
+      setLoading(false)
+      setError("Failed to sign in with Google")
+    }
+  }
+
   return (
     <>
     <Container
@@ -74,6 +94,21 @@ export default function Signup() {
               Sign Up
             </Button>
           </Form>
+          
+          <div className="text-center mt-3">
+            <div className="border-top pt-3">
+              <p className="text-muted">Or</p>
+              <Button 
+                variant="outline-primary" 
+                className="w-100" 
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+              >
+                <i className="fab fa-google me-2"></i>
+                Continue with Google
+              </Button>
+            </div>
+          </div>
         </Card.Body>
       </Card>
       <div className="w-100 text-center mt-2">

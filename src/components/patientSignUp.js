@@ -1,12 +1,11 @@
-import React, { useRef, useState, useEffect } from "react"
-import { Form, Button, Card, Alert, Container, DropdownButton, Dropdown, ButtonToolbar, ButtonGroup} from "react-bootstrap"
+import React, { useRef, useState } from "react"
+import { Form, Button, Card, Alert, Container, ButtonToolbar, ButtonGroup} from "react-bootstrap"
 import { useAuth } from "../contexts/AuthContext"
 import { Link, useHistory } from "react-router-dom"
 import DatePicker from 'react-date-picker';
 import BaseSelect from 'react-select'
 import makeAnimated from 'react-select/animated';
 import Patient from "../classes/Patient";
-import {PersonalDetails} from "../classes/User";
 import {collection, getDocs, query, where} from 'firebase/firestore'
 import {db} from '../firebase'
 import { departments } from '../data/departments'
@@ -81,12 +80,12 @@ export default function Signup() {
     setLoading(true)
     setError("")
 
-    if(idRef.current.value.length != 9){
+    if(idRef.current.value.length !== 9){
       setLoading(false)
       setError("Invalid Id")
       return window.scrollTo(0, 0)
     }
-    if(phoneNumberRef.current.value.length != 10){
+    if(phoneNumberRef.current.value.length !== 10){
       setLoading(false)
       setError("Invalid Phone number")
       return window.scrollTo(0, 0)
@@ -98,9 +97,20 @@ export default function Signup() {
     }
 
     try {
-      const newUser = new Patient(new PersonalDetails(firstNameRef.current.value, lastNameRef.current.value,
-        idRef.current.value, emailRef.current.value, phoneNumberRef.current.value, dobValue), departmentValue, 
-        Array.from(new Set(chosenOccupationalTherapistsList.concat(chosenPhysiotherapistsList))), permissionValue)
+      const newUser = Patient.createFromForm({
+        firstName: firstNameRef.current.value,
+        lastName: lastNameRef.current.value,
+        id: idRef.current.value,
+        email: emailRef.current.value,
+        phoneNumber: phoneNumberRef.current.value,
+        dob: dobValue,
+        department: departmentValue,
+        therapists: Array.from(new Set(chosenOccupationalTherapistsList.concat(chosenPhysiotherapistsList))),
+        permission: permissionValue,
+        attendants: [],
+        data: [],
+        uid: null
+      });
       await signup(newUser, passwordRef.current.value)
       history.push("/")
     } catch(e) {

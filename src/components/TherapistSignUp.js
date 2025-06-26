@@ -1,19 +1,14 @@
-import React, { useRef, useState, useEffect } from "react"
-import { Form, Button, Card, Alert, Container, DropdownButton, Dropdown, ButtonToolbar, ButtonGroup} from "react-bootstrap"
+import React, { useRef, useState } from "react"
+import { Form, Button, Card, Alert, Container, ButtonGroup} from "react-bootstrap"
 import { useAuth } from "../contexts/AuthContext"
 import { Link, useHistory } from "react-router-dom"
 import DatePicker from 'react-date-picker';
 import BaseSelect from 'react-select'
 import RequiredSelect from "./RequiredSelect";
 import makeAnimated from 'react-select/animated';
-import { PersonalDetails } from "../classes/User";
 import Therapist from "../classes/Therapist";
-import {collection, getDocs, query, where} from 'firebase/firestore'
-import {db} from '../firebase'
 import { departments } from '../data/departments'
 import { specialities } from "../data/speciality";
-
-const therapistsCollection = collection(db, 'Therapists');
 
 export default function Signup() {
   const idRef = useRef()
@@ -36,12 +31,12 @@ export default function Signup() {
     setLoading(true)
     setError("")
 
-    if(idRef.current.value.length != 9){
+    if(idRef.current.value.length !== 9){
       setLoading(false)
       setError("Invalid Id")
       return window.scrollTo(0, 0)
     }
-    if(phoneNumberRef.current.value.length != 10){
+    if(phoneNumberRef.current.value.length !== 10){
       setLoading(false)
       setError("Invalid Phone number")
       return window.scrollTo(0, 0)
@@ -53,9 +48,19 @@ export default function Signup() {
     }
 
     try {
-        const newUser = new Therapist(new PersonalDetails(firstNameRef.current.value, lastNameRef.current.value,
-            idRef.current.value, emailRef.current.value, phoneNumberRef.current.value, dobValue), departmentValue, 
-            specialityList)
+      const newUser = Therapist.createFromForm({
+        firstName: firstNameRef.current.value,
+        lastName: lastNameRef.current.value,
+        id: idRef.current.value,
+        email: emailRef.current.value,
+        phoneNumber: phoneNumberRef.current.value,
+        dob: dobValue,
+        department: departmentValue,
+        speciality: specialityList,
+        data: [],
+        patients: [],
+        uid: null
+      });
       await signup(newUser, passwordRef.current.value)
       history.push("/")
     } catch(e) {

@@ -1,6 +1,6 @@
 import { db } from "../firebase"
 import {collection, getDocs, doc, updateDoc, arrayUnion, query, where, getDoc, increment, addDoc, 
-    deleteDoc, arrayRemove } from 'firebase/firestore'
+    deleteDoc, arrayRemove, writeBatch } from 'firebase/firestore'
 
 const therapistsCollection = collection(db, 'Therapists');
 const patientsCollection = collection(db, 'Patients');
@@ -29,7 +29,7 @@ export async function getAppointment(ref) { // returns the appointment data of t
 export async function getDepartmentUsersList(user){ //returns all the users of the same department as the given user
     let usersList = []
     //gets therapists
-    const therapistDepQ = query(therapistsCollection, where('Department', '==', user.department));
+    const therapistDepQ = query(therapistsCollection, where('Department', '==', user.Department));
     const therapistDepQuerySnapshot = await getDocs(therapistDepQ);
     therapistDepQuerySnapshot.forEach((therapistDoc) => {
         usersList.push({
@@ -39,7 +39,7 @@ export async function getDepartmentUsersList(user){ //returns all the users of t
         })
     })
     //gets patients
-    const patientDepQ = query(patientsCollection, where('Department', '==', user.department));
+    const patientDepQ = query(patientsCollection, where('Department', '==', user.Department));
     const patientDepQuerySnapshot = await getDocs(patientDepQ);
     patientDepQuerySnapshot.forEach((patientDoc) => {
         usersList.push({
@@ -49,7 +49,7 @@ export async function getDepartmentUsersList(user){ //returns all the users of t
         })
     })
     //gets attendants
-    const attendantDepQ = query(attendantsCollection, where('Department', '==', user.department));
+    const attendantDepQ = query(attendantsCollection, where('Department', '==', user.Department));
     const attendantDepQuerySnapshot = await getDocs(attendantDepQ);
     attendantDepQuerySnapshot.forEach((attendantDoc) => {
         usersList.push({
@@ -95,19 +95,21 @@ export async function getUserPatients(user){ //returns the patients of a given u
     if(user.Type === "Patient"){
         return undefined //so that we can make a difference in the calendar file of what to display
     }
-    let patients = []
+    let patients = [{ value: "None", label: "None" }]
     if(user.Patients){
-        user.Patients.forEach(async p => {
+        const patientPromises = user.Patients.map(async p => {
             const patientDocRef = doc(db, p.value.path)
             const patientDocSnapShot = await getDoc(patientDocRef)
-            patients.push({
+            return {
                 label: patientDocSnapShot.data().PersonalDetails["First Name"] + " " + patientDocSnapShot.data().PersonalDetails["Last Name"]
                 + " " + patientDocSnapShot.data().PersonalDetails["Id"],
                 id: patientDocSnapShot.data().PersonalDetails["Id"],
                 value: patientDocSnapShot.ref, //refrence to the patients' document
-                data: patientDocSnapShot.Data,
-            })
-        })
+                data: patientDocSnapShot.data(),
+            }
+        });
+        const resolvedPatients = await Promise.all(patientPromises);
+        patients = patients.concat(resolvedPatients);
     }
     console.log(patients)
     return patients
@@ -143,14 +145,21 @@ export async function getDataFromUser(user) { //returns all appointments of a gi
     const userDocRef = doc(db, userDocPointerSnapShot.data().Pointer.path)
     const userDocSnapShot = await getDoc(userDocRef)
     let data = []
-    userDocSnapShot.data().Data.forEach(async ref => { //get appointments from appointments refrences
-        const appointmentDocRef = doc(db,  ref.path)
-        const appointmentDocSnap = await getDoc(appointmentDocRef)
-        let appointment = appointmentDocSnap.data()
-        appointment.startDate = appointment.startDate.toDate() //convert unix timestamp into date
-        appointment.endDate = appointment.endDate.toDate()
-        data.push(appointment)
-    })
+    
+    // Use Promise.all to handle async operations properly
+    if (userDocSnapShot.data().Data) {
+        const appointmentPromises = userDocSnapShot.data().Data.map(async ref => {
+            const appointmentDocRef = doc(db,  ref.path)
+            const appointmentDocSnap = await getDoc(appointmentDocRef)
+            let appointment = appointmentDocSnap.data()
+            appointment.startDate = appointment.startDate.toDate() //convert unix timestamp into date
+            appointment.endDate = appointment.endDate.toDate()
+            return appointment
+        });
+        data = await Promise.all(appointmentPromises);
+    }
+    
+    console.log(data)
     return data;
 }
 
@@ -158,101 +167,178 @@ export async function getDataFromRef(userRef) { //returns all appointments of a 
     const userDocRef = doc(db, userRef.path)
     const userDocSnapShot = await getDoc(userDocRef)
     let data = []
-    userDocSnapShot.data().Data.forEach(async ref => { //get appointments from appointments refrences
-        const appointmentDocRef = doc(db,  ref.path)
-        const appointmentDocSnap = await getDoc(appointmentDocRef)
-        let appointment = appointmentDocSnap.data()
-        appointment.startDate = appointment.startDate.toDate() //convert unix timestamp into date
-        appointment.endDate = appointment.endDate.toDate()
-        console.log(appointment)
-        data.push(appointment)
-    })
-    return data;
-}
-
-async function isCollision(toAdd) { //checks if the appointment to add colides with any existing appointments
-    let temp = false;
-    const participants = (toAdd.therapists)? toAdd.patients.concat(toAdd.therapists) : toAdd.patients
-    for(const p of participants) { // check for events collisions for all paricipants
-        const userDocRef = doc(db, p)
-        const userDocSnapShot = await getDoc(userDocRef)
-        for(const ref of userDocSnapShot.data().Data) { //get appointments from appointments refrences
+    
+    // Use Promise.all to handle async operations properly
+    if (userDocSnapShot.data().Data) {
+        const appointmentPromises = userDocSnapShot.data().Data.map(async ref => {
             const appointmentDocRef = doc(db,  ref.path)
             const appointmentDocSnap = await getDoc(appointmentDocRef)
             let appointment = appointmentDocSnap.data()
-            let {startDate: existsStart, endDate: existsEnd} = appointment;
-            let {startDate: newStart, endDate: newEnd} = toAdd;
-            existsStart = existsStart.toDate()
-            existsEnd = existsEnd.toDate()
-            console.log(existsStart, existsEnd, newStart, newEnd)
-            if(appointment.id != toAdd.id){
-                temp = (temp)? true: !(existsEnd <= newStart || existsStart >= newEnd)
-            }
-            if(temp){
-                return true;
-            }
-        }
+            appointment.startDate = appointment.startDate.toDate() //convert unix timestamp into date
+            appointment.endDate = appointment.endDate.toDate()
+            return appointment
+        });
+        data = await Promise.all(appointmentPromises);
     }
-    console.log(temp)
-    return temp;
+    
+    return data;
 }
 
-export async function addEvent(added, currentUser) {
-    console.log("enter addEvent")
-    console.log("event = ", added)
-    coli = await isCollision(added.appointmentData)
-    console.log(coli)
-    if(!coli){ 
-        added.appointmentData.startDate.setSeconds(0) //collisions accured because of seconds -> reset seconds to 0
-        added.appointmentData.endDate.setSeconds(0)
-        const IdCountRef = doc(db, "Appointments", "IdCount");
-        const docSnap = await getDoc(IdCountRef);
-        const id = docSnap.data().count
-        added.appointmentData.id = id;
-        added.appointmentData.admin = [await getUserDocRef(currentUser.uid)]
-        console.log(added)
-        await updateDoc(IdCountRef, { //update id counter
-            count: increment(1)
-        });
-        const appointmentDocRef = await addDoc(collection(db, "Appointments"), added.appointmentData); //craete document for appointment
-        if(added.appointmentData.patients){
-            added.appointmentData.patients.forEach(async p => {//add event to patients
-                const userDocRef = doc(db, p);
-                await updateDoc(userDocRef, {
-                    "Data": arrayUnion(appointmentDocRef)
-                });
-            })
-        }
-        if(added.appointmentData.therapists){
-            added.appointmentData.therapists.forEach(async p => {//add event to therapists
-                const userDocRef = doc(db, p);
-                await updateDoc(userDocRef, {
-                    "Data": arrayUnion(appointmentDocRef)
-                });
-            })
-        }
-        //occupy room
-        if(added.appointmentData.room){
-            added.appointmentData.room.forEach(async room => {
-                const roomDocRef = doc(db, room)
-                await updateDoc(roomDocRef, {
-                    occupied: arrayUnion({startDate: added.appointmentData.startDate,
-                                            endDate: added.appointmentData.endDate,
-                                            appointmentRef: appointmentDocRef})
-                });
-            })
-        }
-        return true
+async function isCollision(toAdd) { //checks if the appointment to add collides with any existing appointments
+    let temp = false;
+    const participants = (toAdd.therapists) ? toAdd.patients.concat(toAdd.therapists) : toAdd.patients;
+    if (!participants) {
+        return temp;
     }
-    else{
-        return false
+
+    // Fetch all user docs in parallel
+    const userDocSnapshots = await Promise.all(
+        participants.map(p => getDoc(doc(db, p)))
+    );
+
+    // Collect all appointment refs
+    const allAppointmentRefs = userDocSnapshots
+        .map(snap => (snap.data().Data || []))
+        .flat();
+
+    // Fetch all appointment docs in parallel
+    const appointmentDocs = await Promise.all(
+        allAppointmentRefs.map(ref => getDoc(doc(db, ref.path)))
+    );
+
+    for (const appointmentDocSnap of appointmentDocs) {
+        const appointment = appointmentDocSnap.data();
+        // Skip if missing required fields
+        if (!appointment || !appointment.startDate || !appointment.endDate) continue;
+        let { startDate: existsStart, endDate: existsEnd, id: existsId } = appointment;
+        let { startDate: newStart, endDate: newEnd, id: newId } = toAdd;
+        existsStart = existsStart.toDate();
+        existsEnd = existsEnd.toDate();
+        // If editing, skip comparing with itself
+        if (newId !== undefined && existsId === newId) continue;
+        // Check for overlap
+        if (!(existsEnd <= newStart || existsStart >= newEnd)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export async function addEvent(event, currentUser) {
+    console.log("enter addEvent");
+    const startTime = performance.now();
+    console.log("event = ", event);
+
+    const { appointmentData } = event;
+    const hasPatients = !!appointmentData.patientId;
+    const hasTherapists = appointmentData.type === "Private" ? true : !!appointmentData.therapistId;
+
+    if (!hasPatients || !hasTherapists) {
+        console.error("Missing required fields:", { hasPatients, hasTherapists, appointmentData });
+        return;
+    }
+
+    coli = await isCollision(appointmentData)
+    console.log("collision check result:", coli)
+    
+    if(!coli){ 
+        try {
+            // Reset seconds to avoid collision issues
+            appointmentData.startDate.setSeconds(0)
+            appointmentData.endDate.setSeconds(0)
+
+            // Remove undefined fields from appointmentData
+            Object.keys(appointmentData).forEach(
+                key => appointmentData[key] === undefined && delete appointmentData[key]
+            );
+
+            // Get and increment the appointment ID
+            const IdCountRef = doc(db, "Appointments", "IdCount");
+            const docSnap = await getDoc(IdCountRef);
+            const id = docSnap.data().count;
+            appointmentData.id = id;
+
+            // Set the admin (creator) of the appointment
+            appointmentData.admin = [await getUserDocRef(currentUser.uid)];
+
+            // Update the ID counter
+            await updateDoc(IdCountRef, {
+                count: increment(1)
+            });
+
+            // Create the appointment document
+            const appointmentDocRef = await addDoc(collection(db, "Appointments"), appointmentData);
+            console.log("Created appointment document:", appointmentDocRef.id);
+
+            // --- Optimization: Use Firestore batch for all updates ---
+            const batch = writeBatch(db);
+
+            // Update patients' references
+            if (appointmentData.patients && appointmentData.patients.length > 0) {
+                appointmentData.patients.forEach(p => {
+                    if (!p) {
+                        console.error("Skipping undefined patient path in appointmentData.patients");
+                        return;
+                    }
+                    const userDocRef = doc(db, p);
+                    batch.update(userDocRef, {
+                        "Data": arrayUnion(appointmentDocRef)
+                    });
+                });
+            }
+
+            // Update therapists' references
+            if (appointmentData.therapists && appointmentData.therapists.length > 0) {
+                appointmentData.therapists.forEach(p => {
+                    if (!p) {
+                        console.error("Skipping undefined therapist path in appointmentData.therapists");
+                        return;
+                    }
+                    const userDocRef = doc(db, p);
+                    batch.update(userDocRef, {
+                        "Data": arrayUnion(appointmentDocRef)
+                    });
+                });
+            }
+
+            // Update room occupancy
+            if (appointmentData.room && appointmentData.room.length > 0) {
+                appointmentData.room.forEach(room => {
+                    const roomDocRef = doc(db, room.path);
+                    batch.update(roomDocRef, {
+                        occupied: arrayUnion({
+                            startDate: appointmentData.startDate,
+                            endDate: appointmentData.endDate,
+                            appointmentRef: appointmentDocRef
+                        })
+                    });
+                });
+            }
+
+            // Commit all updates in a single batch
+            const batchStart = performance.now();
+            await batch.commit();
+            const batchEnd = performance.now();
+            console.log(`Batch commit took ${batchEnd - batchStart} ms`);
+            // --- End optimization ---
+
+            const endTime = performance.now();
+            console.log(`addEvent total time: ${endTime - startTime} ms`);
+            console.log("Successfully added appointment and updated all references");
+            return true;
+        } catch (error) {
+            console.error("Error adding appointment:", error);
+            return false;
+        }
+    } else {
+        console.log("Appointment collision detected");
+        return false;
     }
 }
 
 export async function editEvent(changed, user) {
     console.log(changed)
     let participantEvents = await getDataFromUser(user)
-    let originalEventToChange = participantEvents.filter(appointment => appointment.id == Object.keys(changed)[0])
     let changedDetails = changed.appointmentData
     // check for collision
     coli = await isCollision(changedDetails)
@@ -268,52 +354,58 @@ export async function editEvent(changed, user) {
     appointmentDocSnap.data().patients.concat(appointmentDocSnap.data().therapists) : appointmentDocSnap.data().patients
     const previousRoom = appointmentDocSnap.data().room
     console.log(previousRoom)
-    updateDoc(appointmentDocRef, changedDetails); //update the appointment in DB
+    
+    const updatePromises = [];
+    
+    updatePromises.push(updateDoc(appointmentDocRef, changedDetails)); //update the appointment in DB
+    
     //remove appointment from previous participants
-    previousParticipants.forEach(async (p) => {
+    previousParticipants.forEach((p) => {
         let partiDocRef = doc(db, p)
-        let partiDocSnapShot = await getDoc(partiDocRef)
-        participantEvents = partiDocSnapShot.data().Data
-        await updateDoc(partiDocRef, {
+        updatePromises.push(updateDoc(partiDocRef, {
             "Data": arrayRemove(appointmentDocRef)
-        });
+        }));
     })
+    
     const participants = (changedDetails.therapists)? 
                         changedDetails.patients.concat(changedDetails.therapists) : changedDetails.patients
     //add appointment to new paricipantes
-    participants.forEach(async (p) => {
+    participants.forEach((p) => {
         let partiDocRef = doc(db, p)
-        let partiDocSnapShot = await getDoc(partiDocRef)
-        participantEvents = partiDocSnapShot.data().Data
         if(!(appointmentDocRef.id in participantEvents)){//if the participant is new
-            await updateDoc(partiDocRef, {
+            updatePromises.push(updateDoc(partiDocRef, {
                 "Data": arrayUnion(appointmentDocRef)
-            });
+            }));
         }
     })
+    
     //change room
-    if(previousRoom != changedDetails.room) {//check if the room changed
+    if(previousRoom !== changedDetails.room) {//check if the room changed
         for(const room of previousRoom) { //free old room
             if(!(room in changedDetails.room)) {
                 const roomDocRef = doc(db, room)
                 const roomDocSnapShot = await getDoc(roomDocRef)
                 const occupiedList = roomDocSnapShot.data().occupied
-                await updateDoc(roomDocRef, {
+                updatePromises.push(updateDoc(roomDocRef, {
                     occupied: occupiedList.filter(appointment => appointment.appointmentRef.id !== appointmentDocRef.id)
-                });
+                }));
             }
         }
-        changedDetails.room.forEach(async room => {//occupy new room
+        for(const room of changedDetails.room) {//occupy new room
             if(!(room in previousRoom)) {
                 const roomDocRef = doc(db, room)
-                await updateDoc(roomDocRef, {
+                updatePromises.push(updateDoc(roomDocRef, {
                     occupied: arrayUnion({startDate: changed.appointmentData.startDate,
                                             endDate: changed.appointmentData.endDate,
                                             appointmentRef: appointmentDocRef})
-                });
+                }));
             }
-        })
+        }
     }
+    
+    // Wait for all updates to complete
+    await Promise.all(updatePromises);
+    
     return true;
 }
 export async function removeEvent(deleted, user) {
@@ -333,26 +425,35 @@ export async function removeEvent(deleted, user) {
     if(canDelete){
         const participants = (deleted.appointmentData.therapists)? 
         deleted.appointmentData.patients.concat(deleted.appointmentData.therapists) : deleted.appointmentData.patients
-        participants.forEach(async (p) => { //delete appointment ref in data of participants
-            let participantEvents = await getDataFromRef(p);
+        
+        const updatePromises = [];
+        
+        // Handle participant updates
+        for (const p of participants) { //delete appointment ref in data of participants
             const partiDocRef = doc(db, p)
             const partiDocSnapShot = await getDoc(partiDocRef)
-            participantEvents = partiDocSnapShot.data().Data
+            const participantEvents = partiDocSnapShot.data().Data
             console.log(participantEvents)
-            updateDoc(partiDocRef, {
+            updatePromises.push(updateDoc(partiDocRef, {
                 "Data": participantEvents.filter(appointment => appointment.id !== appointmentDocRef.id)
-            });
-        })
+            }));
+        }
+        
+        // Handle room updates
         if(deleted.appointmentData.room){ // make room available
-            deleted.appointmentData.room.forEach(async room => {
+            for (const room of deleted.appointmentData.room) {
                 const roomDocRef = doc(db, room)
                 const roomDocSnapShot = await getDoc(roomDocRef)
                 const occupiedList = roomDocSnapShot.data().occupied
-                await updateDoc(roomDocRef, {
+                updatePromises.push(updateDoc(roomDocRef, {
                     occupied: occupiedList.filter(appointment => appointment.appointmentRef.id !== appointmentDocRef.id)
-                });
-            })
+                }));
+            }
         }
+        
+        // Wait for all updates to complete
+        await Promise.all(updatePromises);
+        
         await deleteDoc(doc(db, appointmentDocRef.path))//deletes the appointment doc
     }
 }
