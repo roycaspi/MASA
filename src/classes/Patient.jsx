@@ -14,14 +14,14 @@ export default class Patient extends PatientSide {
     }
     removeAttendant(attendant){
         for(var i = 0; i < this.attendants.length; i++){
-            if(this.attendants[i] == attendant){
+            if(this.attendants[i] === attendant){
                 this.attendants.splice(i, 1);
                 return;
             }
         }
     }
     addSelfToTherapists(userDocRef){
-        if(this.therapists.size != 0) { //add patient to therapist
+        if(this.therapists.size !== 0) { //add patient to therapist
             this.therapists.forEach(async (therapist) => {
               const therapistDocRef = doc(db, therapist.value.path)
               await updateDoc(therapistDocRef, {
@@ -36,4 +36,18 @@ export default class Patient extends PatientSide {
     // get therapists() {
     //     return this.therapists
     // }
+
+    static createFromForm({ firstName, lastName, id, email, phoneNumber, dob, department, therapists, permission, attendants, data, uid }) {
+        // Add validation logic here if needed
+        const personalDetails = new (require('./User').PersonalDetails)(firstName, lastName, id, email, phoneNumber, dob);
+        return new Patient(
+            personalDetails,
+            department,
+            therapists || [],
+            permission || "0",
+            attendants || [],
+            data || [],
+            uid || null
+        );
+    }
 }

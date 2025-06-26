@@ -1,25 +1,16 @@
-import React, { useRef, useState, useEffect } from "react"
-import { Form, Button, Card, Alert, Container, DropdownButton, Dropdown, ButtonToolbar, ButtonGroup} from "react-bootstrap"
+import React, { useRef, useState } from "react"
+import { Form, Button, Card, Alert, Container, ButtonToolbar, ButtonGroup} from "react-bootstrap"
 import { useAuth } from "../contexts/AuthContext"
 import { Link, useHistory } from "react-router-dom"
-import DatePicker from 'react-date-picker';
 import BaseSelect from 'react-select'
 import makeAnimated from 'react-select/animated';
 import Attendant from "../classes/Attendant";
-import {PersonalDetails} from "../classes/User";
 import {collection, getDocs, query, where} from 'firebase/firestore'
 import {db} from '../firebase'
 import { departments } from '../data/departments'
 import RequiredSelect from "./RequiredSelect";
 
 const patientsCollection = collection(db, 'Patients');
-
-const Select = props => (
-  <RequiredSelect
-    {...props}
-    SelectComponent={BaseSelect}
-  />
-);
 
 export default function Signup() {
   const idRef = useRef()
@@ -34,7 +25,6 @@ export default function Signup() {
   const [loading, setLoading] = useState(false)
   const history = useHistory()
   const [departmentValue, setDepartmentValue] = useState("");
-  const [dobValue, setDobValue] = useState(null);
   const [permissionValue, setPermissionValue] = useState("0");
   const [patientsList, setPatientsList] = useState([])
   
@@ -59,12 +49,12 @@ export default function Signup() {
     setLoading(true)
     setError("")
 
-    if(idRef.current.value.length != 9){
+    if(idRef.current.value.length !== 9){
         setLoading(false)
         setError("Invalid Id")
         return window.scrollTo(0, 0)
       }
-      if(phoneNumberRef.current.value.length != 10){
+      if(phoneNumberRef.current.value.length !== 10){
         setLoading(false)
         setError("Invalid Phone number")
         return window.scrollTo(0, 0)
@@ -76,9 +66,18 @@ export default function Signup() {
       }
 
     try {
-      const newUser = new Attendant(new PersonalDetails(firstNameRef.current.value, lastNameRef.current.value,
-        idRef.current.value, emailRef.current.value, phoneNumberRef.current.value), departmentValue, permissionValue,
-        patientsList)
+      const newUser = Attendant.createFromForm({
+        firstName: firstNameRef.current.value,
+        lastName: lastNameRef.current.value,
+        id: idRef.current.value,
+        email: emailRef.current.value,
+        phoneNumber: phoneNumberRef.current.value,
+        department: departmentValue,
+        permission: permissionValue,
+        patients: patientsList,
+        data: [],
+        uid: null
+      });
       await signup(newUser, passwordRef.current.value)
       history.push("/")
     } catch(e) {
@@ -163,4 +162,4 @@ export default function Signup() {
     </Container>
     </>
   )
-}
+} 
