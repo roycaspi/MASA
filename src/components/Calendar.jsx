@@ -81,6 +81,14 @@ function Calendar() {
       const userPointerDocSnap = await getDoc(userPointerDocRef);
       const userPointerData = userPointerDocSnap.data();
       console.log("userPointerData:", userPointerData);
+
+      if (!userPointerData || !userPointerData.Pointer) {
+        console.error("User pointer document is missing the 'Pointer' field!", userPointerData);
+        notify("Your account is not set up correctly. Please contact support.", 'error', 4000);
+        setIsLoadingAppointments(false);
+        return;
+      }
+
       const userDocRef = doc(db, userPointerData.Pointer.path);
 
       // Initialize the appointment data with required fields
@@ -261,6 +269,14 @@ function Calendar() {
         const userPointerDocSnap = await getDoc(userPointerDocRef);
         const userPointerData = userPointerDocSnap.data();
         console.log("userPointerData:", userPointerData);
+
+        if (!userPointerData || !userPointerData.Pointer) {
+          console.error("User pointer document is missing the 'Pointer' field!", userPointerData);
+          notify("Your account is not set up correctly. Please contact support.", 'error', 4000);
+          setIsLoadingAppointments(false);
+          return;
+        }
+
         const userDocRef = doc(db, userPointerData.Pointer.path);
         
         // Set up real-time listener on the user document

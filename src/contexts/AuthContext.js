@@ -120,7 +120,7 @@ export function AuthProvider({ children }) {
     return setDoc(doc(db, "Users", user.uid), { //create new user document in db
       "Pointer": userDocRef,
       "Email": user.email
-    });
+    }, { merge: true });
   }
 
   function login(email, password) {
